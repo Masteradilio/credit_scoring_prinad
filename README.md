@@ -11,21 +11,21 @@
 ---
 
 ## 📑 Table of Contents / Índice
-1. [Executive Summary & Portfolio Pitch](#-executive-summary--portfolio-pitch)
-2. [Interview Preparation Guide & Technical Q&A](#-interview-preparation-guide--technical-qa)
-3. [Architecture & Workflow](#-architecture--workflow)
-4. [Champion vs. Challenger Benchmark](#-champion-vs-challenger-benchmark)
-5. [The 4 Pillars of Model Validation](#-the-4-pillars-of-model-validation)
-6. [Quantitative & Mathematical Formulations](#-quantitative--mathematical-formulations)
-7. [Downstream Applications (IFRS 9 ECL & RAROC Pricing)](#-downstream-applications-ifrs-9-ecl--raroc-pricing)
-8. [Real-World Data Requirements & Schema](#-real-world-data-requirements--schema)
-9. [Interactive Streamlit Dashboard](#-interactive-streamlit-dashboard)
-10. [REST API Documentation & cURL Examples](#-rest-api-documentation--curl-examples)
-11. [Quick Start & Automated Testing](#-quick-start--automated-testing)
+1. [Executive Summary / Resumo Executivo](#-executive-summary--resumo-executivo)
+2. [Architecture & Workflow](#-architecture--workflow)
+3. [Champion vs. Challenger Benchmark](#-champion-vs-challenger-benchmark)
+4. [The 4 Pillars of Model Validation](#-the-4-pillars-of-model-validation)
+5. [Quantitative & Mathematical Formulations](#-quantitative--mathematical-formulations)
+6. [Downstream Applications (IFRS 9 ECL & RAROC Pricing)](#-downstream-applications-ifrs-9-ecl--raroc-pricing)
+7. [Real-World Data Requirements & Schema](#-real-world-data-requirements--schema)
+8. [Interactive Streamlit Dashboard](#-interactive-streamlit-dashboard)
+9. [REST API Documentation & cURL Examples](#-rest-api-documentation--curl-examples)
+10. [Quick Start & Automated Testing](#-quick-start--automated-testing)
+11. [Comprehensive Technical Q&A (20 Questions & Answers)](#-comprehensive-technical-qa-20-questions--answers)
 
 ---
 
-## 🎯 Executive Summary & Portfolio Pitch
+## 🎯 Executive Summary / Resumo Executivo
 
 ### 🇺🇸 English Overview
 PRINAD is an enterprise-grade credit risk modeling system that bridges the gap between **regulatory compliance (Basel III/IV & IFRS 9)** and **cutting-edge predictive machine learning**. 
@@ -39,41 +39,6 @@ PRINAD is an enterprise-grade credit risk modeling system that bridges the gap b
 
 ### 🇧🇷 Resumo Executivo em Português
 O **PRINAD** é um motor de risco de crédito de nível bancário que une conformidade regulatória estrita (**Basileia III/IV IRB**, **IFRS 9** e **Resolução BACEN 4.966**) com o estado da arte em machine learning. Ele resolve o dilema entre poder preditivo e interpretabilidade regulatória por meio de uma governança **Champion vs. Challenger**, integrando explicabilidade por pontos de scorecard, estresse macroeconômico de Vasicek, matrizes estocásticas de Markov para PD Lifetime, cálculo automático de provisão de perda esperada (ECL) e precificação econômica ajustada ao risco (RAROC).
-
----
-
-## 💼 Interview Preparation Guide & Technical Q&A
-
-*(Utilize esta seção para treinar e responder com autoridade técnica em entrevistas para vagas sênior/internacionais de Data Science, Risco Quantitativo e Machine Learning)*
-
-### 🎙️ 60-Second Elevator Pitch
-> *"I designed and built **PRINAD**, an enterprise credit risk engine compliant with Basel III/IV IRB and IFRS 9 / BACEN 4.966. It operationalizes a Champion-Challenger architecture comparing a 100% interpretable WoE Regulatory Scorecard against calibrated Gradient Boosters (LightGBM/XGBoost/Stacking). Beyond scoring, PRINAD incorporates a Vasicek ASRF macro engine to stress-test default probabilities against GDP and interest rate shocks, computes 1-to-10 year Markov survival curves for IFRS 9 Stage 2 Lifetime ECL, and calculates fair loan interest rates via RAROC. In validation across 75,000 contracts, the Champion achieved an AUC of 0.961 and KS of 0.783, while the ensemble challenger reached an AUC of 0.982 and KS of 0.863 with full calibration and zero Basel backtesting traffic-light breaches."*
-
----
-
-### ❓ Top 4 Technical Interview Questions & Answers
-
-#### Q1: Why maintain a WoE Logistic Scorecard as Champion when Gradient Boosting achieves higher AUC?
-- **Answer**: In regulated credit banking (Basel IRB, ECB, Fed SR 11-7, BACEN), models must satisfy **strict interpretability, legal contestability (adverse action notices), and monotonic stability**. A WoE Scorecard guarantees monotonicity, allows decomposing individual credit decisions into exact additive points per attribute (e.g., $+45$ pts for low debt-to-income, $-30$ pts for delinquency), and prevents arbitrary non-linear distortions during economic downturns. The boosting challengers serve as benchmark ceilings and shadow models for high-capacity underwriting.
-
-#### Q2: How do you mathematically link Point-in-Time (PIT) and Through-the-Cycle (TTC) default probabilities?
-- **Answer**: We implement the **Vasicek Asymptotic Single Risk Factor (ASRF)** model:
-  $$PD_{PIT}(Z) = \Phi\left( \frac{\Phi^{-1}(PD_{TTC}) - \sqrt{\rho} Z}{\sqrt{1 - \rho}} \right)$$
-  Where $PD_{TTC}$ is the baseline structural probability, $\rho$ is the regulatory asset correlation derived from Basel formulas, and $Z$ is the systematic macroeconomic factor ($Z \sim \mathcal{N}(0, 1)$). When macro conditions deteriorate (negative $Z$, driven by lower GDP or higher Selic/unemployment), $PD_{PIT}$ increases in a mathematically bounded and calibrated fashion across all rating bands.
-
-#### Q3: How are the 4 Pillars of Model Validation evaluated in your framework?
-- **Answer**: Following Basel Committee guidelines (BCBS 328) and EBA standards:
-  1. **Discrimination**: ROC-AUC, Gini ($2 \cdot \text{AUC} - 1$), Kolmogorov-Smirnov (KS) statistic, and PR-AUC.
-  2. **Calibration**: Brier Score loss, Murphy Brier Decomposition ($\text{Reliability} - \text{Resolution} + \text{Uncertainty}$), Hosmer-Lemeshow $\chi^2$ test, and Expected Calibration Error (ECE).
-  3. **Population Stability**: Population Stability Index ($\text{PSI}$) monitored across economic vintages with regulatory traffic lights ($\text{PSI} < 0.10 \implies \text{Green}$).
-  4. **Statistical Backtesting**: Exact **Clopper-Pearson 95% Binomial Confidence Intervals** and Basel Committee Traffic Light zones per rating grade (A1 to Default).
-
-#### Q4: How does your system compute IFRS 9 Expected Credit Loss (ECL) and RAROC Loan Pricing?
-- **Answer**: 
-  - **ECL Staging**: We evaluate Significant Increase in Credit Risk (SICR: $PD_{\text{current}} / PD_{\text{origination}} \ge 2.5$ or $\text{DPD} \ge 30$). Stage 1 calculates 12-month ECL ($ECL_{12m} = PD_{12m} \times LGD \times EAD \times DF_1$), while Stage 2/3 calculates multi-year Lifetime ECL discounted using Markov transition curves.
-  - **RAROC Loan Pricing**:
-    $$\text{Fair Lending Rate} = \text{Cost of Funds (FTP)} + \text{OpEx} + \text{Expected Loss (EL)} + \text{Capital Charge} + \text{Target Net Margin}$$
-    Where Capital Charge is proportional to the 99.9% Vasicek Unexpected Loss (Economic Capital).
 
 ---
 
@@ -118,7 +83,7 @@ Evaluated on held-out test partition ($N = 15,000$, empirical default rate = 26.
 
 ## 🔬 The 4 Pillars of Model Validation
 
-PRINAD incorporates the complete 4-pillar validation framework formalized by banking regulators:
+PRINAD incorporates the complete 4-pillar validation framework formalized by banking regulators (BCBS 328 & EBA Standards):
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -264,9 +229,9 @@ cd credit_scoring_prinad
 pip install -r requirements.txt
 ```
 
-### 2. Generate Data & Train All Models
+### 2. Generate Synthetic Data & Train All Models
 ```bash
-# 1. Generate 75,000 synthetic records with latent econometric factors
+# 1. Generate 75,000 synthetic records with latent econometric factors for benchmark reproduction
 python modelos/data_consolidator_prinad.py
 
 # 2. Train Champion Scorecard, Challengers & Execute 4-Pillar Validation
@@ -278,6 +243,125 @@ python modelos/train_model.py
 python -m pytest -v
 # 17 passed in ~4s (100% test pass rate)
 ```
+
+---
+
+## ❓ Comprehensive Technical Q&A (20 Questions & Answers)
+
+### Q1: Why is a Logistic Regression + WoE Scorecard maintained as the Champion model instead of deploying only Gradient Boosting?
+**Answer**: In regulated banking under Basel III/IV IRB (BCBS 328, ECB Guide, Fed SR 11-7, BACEN Res. 4.966), models must satisfy strict requirements for **explainability, adverse action notices, audibility, and monotonic stability**. A WoE Scorecard guarantees monotonicity, eliminates multicollinearity through binning, and allows decomposing individual credit decisions into exact additive points. Tree-based challengers (LightGBM, XGBoost, Stacking) act as benchmark ceilings and shadow models to evaluate the opportunity cost of regulatory transparency.
+
+### Q2: What is Weight of Evidence (WoE) and why is monotonic binning crucial for credit scoring?
+**Answer**: WoE measures the log-ratio of non-defaulters to defaulters within a specific category: $WoE_i = \ln\left( \frac{G_i / G_{\text{total}}}{B_i / B_{\text{total}}} \right)$. Monotonic binning enforces that as a risk factor increases (e.g., debt-to-income or days in arrears), the assigned WoE strictly decreases (or increases) without erratic fluctuations. This prevents overfitting to sample noise and guarantees economically sensible credit decisions.
+
+### Q3: How is Information Value (IV) calculated and how does it drive feature selection?
+**Answer**: $IV = \sum_{i=1}^k \left( \frac{G_i}{G_{\text{total}}} - \frac{B_i}{B_{\text{total}}} \right) \times WoE_i$. Under the standard Siddiqi (2006) criteria:
+- $IV < 0.02$: Unpredictive (discarded)
+- $0.02 \le IV < 0.10$: Weak predictor
+- $0.10 \le IV < 0.30$: Medium predictor
+- $0.30 \le IV < 0.50$: Strong predictor
+- $IV \ge 0.50$: Suspicious / Very High (evaluated for target leakage)
+PRINAD uses $IV \ge 0.02$ to automatically select the most predictive, robust variables.
+
+### Q4: How is a continuous Probability of Default scaled into standard Scorecard Points?
+**Answer**: Using the standard Point-to-Double-the-Odds ($PDO$) formula:
+$$\text{Factor} = \frac{PDO}{\ln(2)}, \quad \text{Offset} = \text{Target Score} - \text{Factor} \cdot \ln(\text{Target Odds})$$
+$$\text{Score} = \text{Offset} - \text{Factor} \cdot \ln(\text{Odds}) = \text{Base Points} + \sum_{j=1}^M \text{Points}_{j,i}$$
+With $PDO=20$, $\text{Target}=600$, and $\text{Odds}=50:1$, an odds ratio increase by $2\times$ reduces the score by exactly 20 points.
+
+### Q5: What is the theoretical foundation of the Vasicek Asymptotic Single Risk Factor (ASRF) model?
+**Answer**: Vasicek (1987, 2002) models default as a latent asset value process: $A_i = \sqrt{\rho} Z + \sqrt{1 - \rho} \epsilon_i$, where $Z \sim \mathcal{N}(0, 1)$ is the common macroeconomic factor, $\epsilon_i \sim \mathcal{N}(0, 1)$ is the idiosyncratic borrower risk, and $\rho$ is asset correlation. Conditional on macro state $Z$, the default rate across an infinitely granular portfolio is given by:
+$$PD(Z) = \Phi\left( \frac{\Phi^{-1}(PD) - \sqrt{\rho} Z}{\sqrt{1 - \rho}} \right)$$
+
+### Q6: What is the exact operational difference between Through-the-Cycle (TTC) and Point-in-Time (PIT) PD?
+**Answer**:
+- **$PD_{TTC}$ (Through-the-Cycle)**: Reflects average default risk over a full economic cycle, neutralizing temporary macroeconomic shocks. Used for **Basel III/IV regulatory capital allocation** to prevent procyclicality.
+- **$PD_{PIT}$ (Point-in-Time)**: Reflects conditional default risk over the next 12 months given the current macroeconomic state $Z$. Used for **IFRS 9 staging, provisions, and loan pricing**.
+
+### Q7: How is the regulatory asset correlation $\rho$ calculated across different asset classes in Basel III/IV?
+**Answer**: Under the Basel IRB formula:
+- **Retail Mortgages**: Fixed $\rho = 0.15$ (15%).
+- **Qualifying Revolving Retail (Cards)**: Fixed $\rho = 0.04$ (4%).
+- **Other Retail (Personal/Auto)**: Dynamically calibrated as:
+  $$\rho = 0.03 \cdot \frac{1 - e^{-35 \cdot PD}}{1 - e^{-35}} + 0.16 \cdot \left(1 - \frac{1 - e^{-35 \cdot PD}}{1 - e^{-35}}\right)$$
+  Correlation decreases from $16\%$ for low-risk borrowers down to $3\%$ for high-risk borrowers.
+
+### Q8: How does PRINAD calibrate the systematic macroeconomic factor $Z$ from real-world variables?
+**Answer**: $Z$ is computed as a standardized linear macroeconomic index:
+$$Z = w_{\text{GDP}} \cdot \tilde{X}_{\text{GDP}} - w_{\text{Selic}} \cdot \tilde{X}_{\text{Selic}} - w_{\text{Unemp}} \cdot \tilde{X}_{\text{Unemp}}$$
+Where $\tilde{X}$ are z-score standardized macroeconomic indicators. Positive $Z$ represents an economic expansion ($PD_{PIT} < PD_{TTC}$), while negative $Z$ represents a recession or credit stress ($PD_{PIT} > PD_{TTC}$).
+
+### Q9: How are IFRS 9 / BACEN 4.966 forward-looking macroeconomic scenarios weighted?
+**Answer**: IFRS 9 requires computing Expected Credit Loss across multiple probability-weighted macroeconomic paths:
+$$PD_{\text{Weighted}} = 0.50 \cdot PD_{PIT}(Z_{\text{Baseline}}) + 0.25 \cdot PD_{PIT}(Z_{\text{Upside}}) + 0.25 \cdot PD_{PIT}(Z_{\text{Adverse}})$$
+This captures non-linear asymmetries where severe adverse downturns increase provisions more than symmetric upside booms reduce them.
+
+### Q10: How does the Markov Chain Transition Matrix construct multi-year Lifetime PD term structures?
+**Answer**: Given an 11-state transition matrix $\mathbf{P}$ (ratings A1 to DEFAULT, with DEFAULT as an absorbing state):
+$$PD_{\text{cumulative}}(t) = \left[ \mathbf{P}^t \right]_{\text{Rating}, \text{DEFAULT}}$$
+$$PD_{\text{marginal}}(t) = PD_{\text{cumulative}}(t) - PD_{\text{cumulative}}(t-1)$$
+This yields survival schedules for loan maturities from year 1 to year 10 for multi-year ECL discounting.
+
+### Q11: What are the criteria for Stage 1, Stage 2 (SICR), and Stage 3 under IFRS 9 / BACEN 4.966?
+**Answer**:
+- **Stage 1 (Performing)**: No Significant Increase in Credit Risk. $DPD < 30$ days and $PD_{\text{current}} / PD_{\text{origination}} < 2.5$. Provisioned for **12-month ECL**.
+- **Stage 2 (Underperforming / SICR)**: Significant Increase in Credit Risk ($DPD \ge 30$ days or $PD$ ratio $\ge 2.5\times$ or rating downgrade $\ge 3$ notches). Provisioned for **Lifetime ECL**.
+- **Stage 3 (Credit-Impaired / Default)**: Objective evidence of default ($DPD \ge 90$ days, write-off, bankruptcy, or $PD \ge 85\%$). Provisioned for **100% Lifetime ECL**.
+
+### Q12: What is the exact mathematical formulation of Expected Credit Loss (ECL)?
+**Answer**:
+$$\text{ECL}_{\text{Stage 1}} = PD_{12m} \times LGD \times EAD \times (1 + r)^{-1}$$
+$$\text{ECL}_{\text{Stage 2}} = \sum_{t=1}^T PD_{\text{marginal}}(t) \times LGD \times EAD(t) \times (1 + r)^{-t}$$
+$$\text{ECL}_{\text{Stage 3}} = 1.0 \times LGD \times EAD \times (1 + r)^{-1}$$
+Where $LGD$ is Loss Given Default, $EAD$ is Exposure at Default, and $r$ is the Effective Interest Rate (EIR).
+
+### Q13: How does PRINAD compute Risk-Based Lending Rates (Fair Interest Rates)?
+**Answer**:
+$$\text{Lending Rate} = \text{FTP (Cost of Funds)} + \text{OpEx} + \text{Expected Loss (EL)} + \text{Capital Charge} + \text{Target Net Margin}$$
+Where $\text{EL} = PD \times LGD$, and Capital Charge $= \frac{\text{Economic Capital} \times \text{Hurdle Rate}}{EAD}$.
+
+### Q14: How is Unexpected Loss (99.9% VaR) calculated and how does RAROC govern lending decisions?
+**Answer**: Under the Basel 99.9% Value-at-Risk standard:
+$$\text{Worst-Case Default Rate (WCDR)} = \Phi\left( \frac{\Phi^{-1}(PD) + \sqrt{\rho} \Phi^{-1}(0.999)}{\sqrt{1 - \rho}} \right)$$
+$$\text{Unexpected Loss (UL / Economic Capital)} = (\text{WCDR} - PD) \times LGD$$
+$$\text{RAROC} = \frac{\text{Revenue} - \text{FTP} - \text{OpEx} - \text{EL}}{\text{Economic Capital}} \ge \text{Target ROE (15\%)}$$
+Loans with $\text{RAROC} < \text{Hurdle Rate}$ destroy shareholder value and are rejected or repriced.
+
+### Q15: How does the Economic Cut-off Optimization algorithm maximize total portfolio net profit?
+**Answer**: It simulates net portfolio profitability across all continuous approval thresholds $c \in [0.01, 0.60]$:
+$$\Pi(c) = \sum_{i: \widehat{PD}_i \le c} \left[ \text{Revenue}_i \cdot (1 - \widehat{PD}_i) - \text{Funding Cost}_i - \text{OpEx}_i - (\widehat{PD}_i \cdot LGD \cdot EAD_i) \right]$$
+The optimal cut-off $c^*$ is the point where the marginal revenue from approving one more borrower equals the marginal expected default loss.
+
+### Q16: What are the distinct roles of ROC-AUC, Gini, and Kolmogorov-Smirnov (KS) in Pillar 1 (Discrimination)?
+**Answer**:
+- **ROC-AUC**: Probability that a randomly selected defaulter has a higher predicted risk score than a non-defaulter.
+- **Gini Coefficient**: Scaled metric $Gini = 2 \cdot AUC - 1 \in [0, 1]$. Regulatory standard for rating power ($Gini \ge 0.50$ is acceptable, $\ge 0.70$ is excellent).
+- **KS Statistic**: Maximum vertical divergence between the cumulative distribution function of defaulters ($F_B(s)$) and non-defaulters ($F_G(s)$): $KS = \max_s |F_B(s) - F_G(s)|$. Measures maximum separation power.
+
+### Q17: What does Murphy's Brier Score Decomposition reveal in Pillar 2 (Calibration)?
+**Answer**:
+$$\text{Brier Score} = \frac{1}{N}\sum_{i=1}^N (p_i - y_i)^2 = \text{Uncertainty} - \text{Resolution} + \text{Reliability}$$
+- **Uncertainty**: Inherent portfolio variance: $\bar{y}(1 - \bar{y})$.
+- **Resolution**: Ability of the model to assign distinct probabilities to different risk groups (higher is better).
+- **Reliability**: Miscalibration error between predicted probabilities and empirical event frequencies (lower is better, ideally $\approx 0$).
+
+### Q18: How is the Population Stability Index (PSI) calculated and what are its action thresholds?
+**Answer**:
+$$\text{PSI} = \sum_{k=1}^K \left( \text{Actual}_k - \text{Expected}_k \right) \times \ln\left( \frac{\text{Actual}_k}{\text{Expected}_k} \right)$$
+- **$\text{PSI} < 0.10$**: 🟢 Green Zone (Stable, no change required).
+- **$0.10 \le \text{PSI} \le 0.25$**: 🟡 Yellow Zone (Moderate drift, requires closer monitoring and feature-level CSI investigation).
+- **$\text{PSI} > 0.25$**: 🔴 Red Zone (Significant population shift, model recalibration or retrain required).
+
+### Q19: How does the Exact Clopper-Pearson Binomial Backtesting test validate Basel IRB compliance?
+**Answer**: For each rating grade with $N$ exposures and $k$ observed defaults, the exact two-sided 95% confidence interval for true default probability $p$ is calculated via the Beta distribution:
+$$\left[ B\left(\frac{\alpha}{2}; k, N - k + 1\right), B\left(1 - \frac{\alpha}{2}; k + 1, N - k\right) \right]$$
+Under Basel Traffic Light rules, if the cumulative binomial probability $P(X \ge k \mid PD_{\text{predicted}}) < 0.01$, the band enters the **Red Zone** (risk is statistically underestimated). If $> 0.05$, it is in the **Green Zone**.
+
+### Q20: How does the PRINAD production architecture ensure enterprise scalability and real-time inference?
+**Answer**:
+- **FastAPI v3.0 REST Server**: Asynchronous endpoints for single underwriting (`/simple_classify`), glass-box points attribution (`/explained_classify`), high-throughput batch scoring (`/multiple_classify`), and real-time Vasicek macro simulations.
+- **Streamlit Dashboard**: Multi-tab visual intelligence cockpit for credit executives, risk committees, and credit underwriters.
+- **Continuous Monitoring**: Automatic logging of feature distributions, PSI tracking across cohorts, and model benchmark comparisons.
 
 ---
 
