@@ -1,0 +1,80 @@
+{
+  "timestamp": "2025-12-23T22:37:57.157361",
+  "best_strategy": "smote",
+  "best_score": 0.9045,
+  "strategies_compared": 6,
+  "results": [
+    {
+      "strategy": "smote",
+      "samples_original": 156889,
+      "samples_balanced": 198186,
+      "synthetic_added": 41297,
+      "balance_ratio": 1.43,
+      "auc_validation": 0.9667,
+      "f1_validation": 0.8862,
+      "auc_original": 0.9623,
+      "f1_original": 0.8027,
+      "combined_score": 0.9045
+    },
+    {
+      "strategy": "borderline",
+      "samples_original": 156889,
+      "samples_balanced": 198186,
+      "synthetic_added": 41297,
+      "balance_ratio": 1.43,
+      "auc_validation": 0.9616,
+      "f1_validation": 0.8807,
+      "auc_original": 0.9607,
+      "f1_original": 0.7895,
+      "combined_score": 0.8981
+    },
+    {
+      "strategy": "borderline2",
+      "samples_original": 156889,
+      "samples_balanced": 198186,
+      "synthetic_added": 41297,
+      "balance_ratio": 1.43,
+      "auc_validation": 0.9579,
+      "f1_validation": 0.8766,
+      "auc_original": 0.9617,
+      "f1_original": 0.7824,
+      "combined_score": 0.8946
+    },
+    {
+      "strategy": "adasyn",
+      "samples_original": 156889,
+      "samples_balanced": 200006,
+      "synthetic_added": 43117,
+      "balance_ratio": 1.4,
+      "auc_validation": 0.9644,
+      "f1_validation": 0.885,
+      "auc_original": 0.9614,
+      "f1_original": 0.7949,
+      "combined_score": 0.9014
+    },
+    {
+      "strategy": "undersample",
+      "samples_original": 156889,
+      "samples_balanced": 80618,
+      "synthetic_added": -76271,
+      "balance_ratio": 1.0,
+      "auc_validation": 0.9531,
+      "f1_validation": 0.9067,
+      "auc_original": 0.9598,
+      "f1_original": 0.7789,
+      "combined_score": 0.8996
+    },
+    {
+      "strategy": "hybrid_under_50",
+      "samples_original": 156889,
+      "samples_balanced": 150971,
+      "synthetic_added": -5918,
+      "balance_ratio": 1.18,
+      "auc_validation": 0.9626,
+      "f1_validation": 0.8978,
+      "auc_original": 0.9618,
+      "f1_original": 0.7914,
+      "combined_score": 0.9034
+    }
+  ]
+}

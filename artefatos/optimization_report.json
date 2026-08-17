@@ -1,0 +1,48 @@
+{
+  "timestamp": "20251224_002051",
+  "n_trials": 100,
+  "best_params": {
+    "xgb_n_estimators": 119,
+    "xgb_max_depth": 9,
+    "xgb_learning_rate": 0.012224857849681203,
+    "xgb_subsample": 0.8296426592351225,
+    "xgb_colsample": 0.8589134148129978,
+    "xgb_min_child_weight": 2,
+    "xgb_reg_alpha": 0.010088274904681727,
+    "xgb_reg_lambda": 4.894371228795577,
+    "xgb_scale_pos_weight": 4.316076872471192,
+    "lgb_n_estimators": 394,
+    "lgb_max_depth": 9,
+    "lgb_learning_rate": 0.046987896988783924,
+    "lgb_subsample": 0.6411758905988402,
+    "lgb_colsample": 0.6754478402445041,
+    "lgb_min_child_samples": 27,
+    "lgb_reg_alpha": 0.00307431218683193,
+    "lgb_reg_lambda": 0.029922319944339363,
+    "smote_k": 9,
+    "target_ratio": 0.8944242025717375
+  },
+  "best_threshold": 0.5,
+  "metrics": {
+    "auc_roc": 0.9588,
+    "gini": 0.9176,
+    "precision": 0.721,
+    "recall": 0.8948,
+    "f1": 0.7986,
+    "threshold": 0.5,
+    "precision_default_05": 0.721,
+    "recall_default_05": 0.8948,
+    "confusion_matrix": [
+      [
+        20525,
+        2791
+      ],
+      [
+        848,
+        7214
+      ]
+    ],
+    "samples_train": 176681,
+    "samples_test": 31378
+  }
+}

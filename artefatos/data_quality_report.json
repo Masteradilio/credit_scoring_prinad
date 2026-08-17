@@ -1,0 +1,81 @@
+{
+  "timestamp": "2025-12-23T22:35:04.547803",
+  "original_data": {
+    "total_samples": 156889,
+    "class_distribution": {
+      "0": 116580,
+      "1": 40309
+    },
+    "class_percentages": {
+      "0": 74.31,
+      "1": 25.69
+    },
+    "imbalance_ratio": 2.89,
+    "minority_class": 1,
+    "minority_count": 40309
+  },
+  "balanced_data": {
+    "total_samples": 214763,
+    "class_distribution": {
+      "0": 115670,
+      "1": 99093
+    },
+    "class_percentages": {
+      "0": 53.86,
+      "1": 46.14
+    },
+    "imbalance_ratio": 1.17,
+    "synthetic_samples": 57874
+  },
+  "statistical_tests": {
+    "KS_distribution_test": {
+      "passed": false,
+      "pass_rate": 8.0,
+      "avg_p_value": 0.08,
+      "failed_features_count": 46,
+      "failed_features_sample": [
+        "QT_PRODUTOS",
+        "IDADE_CLIENTE",
+        "PORTABILIDADE",
+        "ESCOLARIDADE",
+        "RENDA_BRUTA"
+      ],
+      "reason": "8.0% of features passed (threshold: 70%)"
+    },
+    "variance_ratio_test": {
+      "passed": false,
+      "pass_rate": 52.0,
+      "avg_variance_ratio": 1.1534,
+      "acceptable_range": "0.7 - 1.5",
+      "reason": "Avg variance ratio: 1.15 (target: 0.7-1.5)"
+    },
+    "mean_comparison_test": {
+      "passed": false,
+      "pass_rate": 10.0,
+      "avg_p_value": 0.084,
+      "reason": "10.0% of features have similar means"
+    },
+    "covariance_structure_test": {
+      "passed": false,
+      "relative_diff": 0.8825,
+      "threshold": 0.5,
+      "features_tested": 20,
+      "reason": "Covariance similarity: 11.7%"
+    },
+    "range_validation_test": {
+      "passed": true,
+      "pass_rate": 100.0,
+      "out_of_range_count": 0,
+      "out_of_range_sample": [],
+      "reason": "100.0% of features within acceptable range"
+    }
+  },
+  "quality_score": 20.0,
+  "passed": false,
+  "issues": [
+    "KS_distribution_test: 8.0% of features passed (threshold: 70%)",
+    "variance_ratio_test: Avg variance ratio: 1.15 (target: 0.7-1.5)",
+    "mean_comparison_test: 10.0% of features have similar means",
+    "covariance_structure_test: Covariance similarity: 11.7%"
+  ]
+}
