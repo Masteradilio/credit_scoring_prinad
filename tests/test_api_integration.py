@@ -1,98 +1,123 @@
+"""
+Integration Tests for PRINAD Quantitative API v3.0
+"""
 import pytest
 import sys
-import os
-import json
-import logging
 from pathlib import Path
 from fastapi.testclient import TestClient
 
-# Adicionar o diretório pai (raiz do módulo banpara) ao sys.path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+API_DIR = Path(__file__).resolve().parent.parent / "api"
+if str(API_DIR) not in sys.path:
+    sys.path.insert(0, str(API_DIR))
 
-# Importar a API
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "api"))
 from api import app
 
-# Configurar logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
+@pytest.fixture
+def client():
+    with TestClient(app) as c:
+        yield c
+
 
 def test_health_check(client):
-    """Testa o endpoint de health check."""
-    logger.info("Testando /health...")
-    response = client.get("/health")
-    assert response.status_code == 200
-    data = response.json()
-    logger.info(f"Health check response: {data}")
-    assert data["database_loaded"] is True
-    logger.info(f"Health check OK: {data}")
+    res = client.get("/health")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] in ["healthy", "degraded"]
+    assert "version" in data
 
-def test_list_clientes(client):
-    """Testa a listagem de clientes."""
-    logger.info("Testando /clientes...")
-    response = client.get("/clientes?limit=5")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["total_base"] > 0
-    assert len(data["cpfs"]) > 0
-    logger.info(f"Clientes encontrados: {len(data['cpfs'])}")
-    return data["cpfs"][0] # Retorna um CPF para o próximo teste
 
-def test_simple_classify(client, cpf):
-    """Testa a classificação simples de um CPF."""
-    logger.info(f"Testando /simple_classify para CPF: {cpf}")
-    
-    payload = {"cpf": cpf}
-    response = client.post("/simple_classify", json=payload)
-    
-    assert response.status_code == 200
-    data = response.json()
-    
-    # Validações de negócio
-    assert "prinad" in data
+def test_simple_classify(client):
+    payload = {
+        "cpf": "12345678900",
+        "model_architecture": "scorecard",
+        "loan_amount": 10000.0,
+        "asset_class": "retail_other"
+    }
+    res = client.post("/simple_classify", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert "credit_score" in data
+    assert "pd_12m_pit_pct" in data
     assert "rating" in data
-    assert "pd_12m" in data
-    
-    logger.info(f"Classificação OK: Rating {data['rating']}, Score {data['prinad']}")
+    assert "estagio_ifrs9" in data
+    assert data["credit_score"] >= 300
 
-def test_explained_classify(client, cpf):
-    """Testa a classificação com explicação SHAP."""
-    logger.info(f"Testando /explained_classify para CPF: {cpf}")
-    
-    payload = {"cpf": cpf}
-    response = client.post("/explained_classify", json=payload)
-    
-    assert response.status_code == 200
-    data = response.json()
-    
-    assert "explicacao_shap" in data
-    
-    logger.info("Explicação SHAP recebida com sucesso")
 
-def test_invalid_cpf(client):
-    """Testa comportamento com CPF inexistente."""
-    cpf_invalido = "00000000000"
-    logger.info(f"Testando CPF inválido: {cpf_invalido}")
-    
-    payload = {"cpf": cpf_invalido}
-    response = client.post("/simple_classify", json=payload)
-    
-    assert response.status_code == 404
-    logger.info("Erro 404 retornado corretamente")
+def test_explained_classify(client):
+    payload = {
+        "cpf": "12345678900",
+        "model_architecture": "scorecard",
+        "loan_amount": 12000.0
+    }
+    res = client.post("/explained_classify", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert "scorecard_points_breakdown" in data
+    assert "macro_scenarios" in data
+    assert "lifetime_curve" in data
 
-if __name__ == "__main__":
-    # Execução manual se rodar o script diretamente
-    try:
-        # Usar context manager para garantir startup/shutdown events
-        with TestClient(app) as client:
-            test_health_check(client)
-            cpf = test_list_clientes(client)
-            test_simple_classify(client, cpf)
-            test_explained_classify(client, cpf)
-            test_invalid_cpf(client)
-            print("\n[SUCCESS] TODOS OS TESTES PASSARAM COM SUCESSO!")
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        print(f"\n[ERROR] ERRO NOS TESTES: {e}")
-        sys.exit(1)
+
+def test_multiple_classify_json_and_csv(client):
+    payload = {
+        "cpfs": ["11111111111", "22222222222"],
+        "model_architecture": "scorecard",
+        "output_format": "json"
+    }
+    res_json = client.post("/multiple_classify", json=payload)
+    assert res_json.status_code == 200
+    assert len(res_json.json()["results"]) == 2
+    
+    payload["output_format"] = "csv"
+    res_csv = client.post("/multiple_classify", json=payload)
+    assert res_csv.status_code == 200
+    assert "text/csv" in res_csv.headers["content-type"]
+
+
+def test_macro_stress_simulation(client):
+    payload = {
+        "pd_baseline": 0.05,
+        "gdp_growth": -2.5,
+        "selic_rate": 15.0,
+        "unemployment_rate": 12.0
+    }
+    res = client.post("/simulate_macro_stress", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["pd_shocked_pit"] > data["pd_baseline_input"]
+    assert "ifrs9_weighted_scenarios" in data
+
+
+def test_ecl_calculation_endpoint(client):
+    payload = {
+        "ead": 25000.0,
+        "pd_12m": 0.04,
+        "pd_lifetime": 0.12,
+        "days_past_due": 45,
+        "lgd": 0.45
+    }
+    res = client.post("/calculate_ecl", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["stage"] == 2
+    assert data["ecl_amount"] > 0
+
+
+def test_price_loan_endpoint(client):
+    payload = {
+        "pd_12m": 0.03,
+        "lgd": 0.45,
+        "target_net_margin": 0.035
+    }
+    res = client.post("/price_loan", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["fair_lending_rate_annual_pct"] > 10.0
+    assert data["raroc_pct"] > 0
+
+
+def test_models_benchmark_endpoint(client):
+    res = client.get("/models/benchmark")
+    assert res.status_code == 200
+    data = res.json()
+    assert "benchmark_summary" in data

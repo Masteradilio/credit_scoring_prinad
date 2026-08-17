@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyc
 
 # C extensions
 *.so
@@ -29,6 +30,10 @@ venv/
 env/
 ENV/
 .venv/
+
+# Pytest cache & logs
+.pytest_cache/
+*.log
 
 # IDE / Editor files
 .vscode/

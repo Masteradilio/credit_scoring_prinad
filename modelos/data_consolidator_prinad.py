@@ -1,547 +1,324 @@
 """
-Data Consolidator PRINAD - Data Pipeline for PRINAD Credit Scoring Model.
+Data Consolidator PRINAD - High-Variance & Econometric Credit Portfolio Generator
+==================================================================================
+Generates high-quality, high-variance credit risk data with realistic econometric
+relationships for banking portfolios (Retail, Payroll, Cards, SMEs, Mortgages).
 
-Creates consolidated training data for the PRINAD model with:
-1. Cadastral data (demographics)
-2. Behavioral data (v-columns from 3040)
-3. SCR data (credit bureau)
-4. Target variable (CLASS: 0=good, 1=bad)
+Latent Risk Structure:
+- Financial Capacity & Leverage Dynamics (Income elasticity, Debt service burden)
+- Behavioral 24-Month Payment Trajectories (Arrears velocity, Roll-rate momentum)
+- Central Bank SCR Credit Bureau Signals (Rating AA-H, Overdue depth, Write-offs)
+- Sociodemographic Stability Factors (Age, Occupation stability, Relationship tenure)
+- Vintage Time Tags across 2024-2026 for longitudinal stability & PSI validation.
 
-Output: base_prinad_treino.csv with high variance and quality for ML training.
+Outputs generated in `dados/`:
+- base_prinad_treino.csv (Master 75,000 Training Records)
+- base_clientes.csv (Active client database for real-time inference)
+- base_cadastro.csv (Demographic dataset)
+- base_3040.csv (Behavioral delinquency lookback dataset)
+- scr_mock_data.csv (Bacen SCR Bureau dataset)
+
+Author: PRINAD Quantitative Risk Team
 """
 
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from dataclasses import dataclass
-from datetime import datetime
-import sys
-import warnings
 import logging
 
-warnings.filterwarnings('ignore')
-
-# Setup paths
-BASE_DIR = Path(__file__).resolve().parent.parent
-PROJECT_DIR = BASE_DIR.parent
-DADOS_DIR = PROJECT_DIR / "dados"
-
-sys.path.insert(0, str(PROJECT_DIR))
-
-try:
-    from shared.utils import get_rating_from_prinad, calcular_pd_por_rating
-except ImportError:
-    # Fallback implementations
-    def get_rating_from_prinad(prinad: float) -> str:
-        if prinad < 5: return 'A1'
-        if prinad < 15: return 'A2'
-        if prinad < 25: return 'A3'
-        if prinad < 35: return 'B1'
-        if prinad < 50: return 'B2'
-        if prinad < 65: return 'B3'
-        if prinad < 75: return 'C1'
-        if prinad < 85: return 'C2'
-        if prinad < 95: return 'D'
-        return 'DEFAULT'
-    
-    def calcular_pd_por_rating(prinad: float) -> Dict:
-        rating = get_rating_from_prinad(prinad)
-        pd_12m = prinad / 100
-        multipliers = {'A1': 2.5, 'A2': 2.5, 'A3': 3.0, 'B1': 3.5, 'B2': 4.0, 
-                       'B3': 4.5, 'C1': 5.0, 'C2': 5.5, 'D': 6.5, 'DEFAULT': 7.0}
-        return {'pd_12m': pd_12m, 'pd_lifetime': pd_12m * multipliers.get(rating, 3.0)}
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s | %(levelname)s | %(message)s',
-    datefmt='%H:%M:%S'
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s')
 logger = logging.getLogger(__name__)
 
-# Random seed for reproducibility
+BASE_DIR = Path(__file__).resolve().parent.parent
+DADOS_DIR = BASE_DIR / "dados"
+DADOS_DIR.mkdir(parents=True, exist_ok=True)
+
 np.random.seed(42)
 
 
 @dataclass
 class PRINADConfig:
-    """Configuration for PRINAD data generation."""
-    encoding: str = 'latin-1'
-    sep: str = ';'
-    n_records: int = 50000  # Number of records to generate
-    bad_rate: float = 0.15  # 15% default rate (realistic for credit)
-    noise_level: float = 0.10  # 10% noise
+    n_records: int = 75000
+    bad_rate_target: float = 0.18
+    noise_level: float = 0.05
 
 
 class PRINADDataGenerator:
     """
-    Generates high-quality training data for PRINAD model.
-    
-    Creates realistic distributions with proper correlations between features
-    and the target variable (default/non-default).
+    Econometric and behavioral credit portfolio simulation engine.
     """
     
-    # Risk profile distribution
-    PROFILE_DISTRIBUTION = {
-        'excellent': 0.15,   # A1/A2 - Very low risk
-        'good': 0.25,        # A3/B1 - Low risk
-        'moderate': 0.30,    # B2/B3 - Medium risk
-        'risky': 0.20,       # C1/C2 - High risk
-        'default': 0.10      # D/DEFAULT - Very high risk
-    }
+    PROFILES = ['A1_EXCELLENT', 'A2_GOOD', 'B1_MODERATE', 'B2_MEDIUM_RISK', 'C_HIGH_RISK', 'D_VERY_HIGH']
+    PROFILE_WEIGHTS = [0.18, 0.26, 0.24, 0.16, 0.11, 0.05]
     
-    def __init__(self, config: PRINADConfig):
-        self.config = config
-        self.noise = config.noise_level
-    
-    def add_noise(self, value: float, level: float = None) -> float:
-        """Add Gaussian noise to a value."""
-        if level is None:
-            level = self.noise
-        return value * (1 + np.random.normal(0, level))
-    
-    def generate_cpf(self, n: int) -> np.ndarray:
-        """Generate unique CPF-like identifiers."""
-        # Generate 11-digit CPF using two parts to avoid int32 overflow
+    def __init__(self, config: Optional[PRINADConfig] = None):
+        self.config = config or PRINADConfig()
+
+    def generate_cpfs(self, n: int) -> List[str]:
+        """Generate formatted 11-digit CPF numbers."""
         cpfs = []
         for _ in range(n):
-            part1 = np.random.randint(100, 999)
-            part2 = np.random.randint(100, 999)
-            part3 = np.random.randint(100, 999)
-            part4 = np.random.randint(10, 99)
-            cpfs.append(f"{part1}{part2}{part3}{part4}")
-        return np.array(cpfs)
-    
-    def generate_risk_profiles(self, n: int) -> np.ndarray:
-        """Assign risk profiles based on distribution."""
-        profiles = list(self.PROFILE_DISTRIBUTION.keys())
-        probs = list(self.PROFILE_DISTRIBUTION.values())
-        return np.random.choice(profiles, n, p=probs)
-    
-    def generate_cadastral_data(self, n: int, profiles: np.ndarray) -> pd.DataFrame:
-        """
-        Generate cadastral (demographic) data with profile-based distributions.
-        """
-        logger.info(f"Generating cadastral data for {n} records...")
-        
-        data = {
-            'CPF': self.generate_cpf(n),
-            'CLIT': np.arange(1, n + 1)
-        }
-        
-        # Age: 18-80, older clients tend to have better profiles
-        age_by_profile = {
-            'excellent': (35, 65, 8),
-            'good': (30, 60, 10),
-            'moderate': (25, 55, 12),
-            'risky': (22, 50, 15),
-            'default': (20, 45, 12)
-        }
-        
-        ages = np.zeros(n)
-        for i, profile in enumerate(profiles):
-            mean, max_age, std = age_by_profile[profile]
-            ages[i] = np.clip(np.random.normal(mean + 10, std), 18, 80)
-        data['IDADE_CLIENTE'] = ages.astype(int)
-        
-        # Education level
-        edu_by_profile = {
-            'excellent': ['SUPERIOR', 'POS', 'SUPERIOR', 'POS', 'MEDIO'],
-            'good': ['SUPERIOR', 'POS', 'MEDIO', 'SUPERIOR', 'MEDIO'],
-            'moderate': ['MEDIO', 'SUPERIOR', 'MEDIO', 'FUNDAM', 'MEDIO'],
-            'risky': ['MEDIO', 'FUNDAM', 'MEDIO', 'FUNDAM', 'MEDIO'],
-            'default': ['FUNDAM', 'MEDIO', 'FUNDAM', 'FUNDAM', 'MEDIO']
-        }
-        data['ESCOLARIDADE'] = [np.random.choice(edu_by_profile[p]) for p in profiles]
-        
-        # Income: correlated with education and profile
-        income_multipliers = {'FUNDAM': 1.0, 'MEDIO': 1.5, 'SUPERIOR': 2.5, 'POS': 4.0}
-        base_income_by_profile = {
-            'excellent': 8000, 'good': 5000, 'moderate': 3500, 
-            'risky': 2500, 'default': 2000
-        }
-        
-        incomes = []
-        for p, edu in zip(profiles, data['ESCOLARIDADE']):
-            base = base_income_by_profile[p] * income_multipliers.get(edu, 1)
-            incomes.append(max(1500, self.add_noise(base, 0.30)))
-        data['RENDA_BRUTA'] = np.array(incomes).round(2)
-        
-        # Relationship time (months): longer for better profiles
-        tempo_by_profile = {
-            'excellent': (60, 30), 'good': (48, 25), 'moderate': (24, 20),
-            'risky': (12, 15), 'default': (6, 10)
-        }
-        data['TEMPO_RELAC'] = [
-            max(1, int(np.random.normal(tempo_by_profile[p][0], tempo_by_profile[p][1])))
-            for p in profiles
-        ]
-        
-        # Marital status
-        data['ESTADO_CIVIL'] = np.random.choice(
-            ['SOLTEIRO', 'CASADO', 'DIVORCIADO', 'VIUVO'],
-            n, p=[0.30, 0.50, 0.15, 0.05]
-        )
-        
-        # Has vehicle: better profiles more likely
-        vehicle_prob = {'excellent': 0.80, 'good': 0.65, 'moderate': 0.45, 
-                        'risky': 0.30, 'default': 0.15}
-        data['POSSUI_VEICULO'] = [
-            'SIM' if np.random.random() < vehicle_prob[p] else 'NAO'
-            for p in profiles
-        ]
-        
-        # Number of products: more products for better profiles
-        qt_produtos_by_profile = {
-            'excellent': (3, 5), 'good': (2, 4), 'moderate': (2, 3),
-            'risky': (1, 2), 'default': (1, 2)
-        }
-        data['QT_PRODUTOS'] = [
-            np.random.randint(*qt_produtos_by_profile[p])
-            for p in profiles
-        ]
-        
-        return pd.DataFrame(data)
-    
-    def generate_behavioral_data(self, n: int, profiles: np.ndarray) -> pd.DataFrame:
-        """
-        Generate behavioral data (v-columns) representing internal delinquency history.
-        
-        v205: Sum of days overdue in last 24 months
-        v210: Sum of days overdue 15-30 days
-        v220: Sum of days overdue 31-60 days
-        v230: Sum of days overdue 61-90 days
-        v240: Sum of days overdue 91-120 days
-        v245: Sum of days overdue 121+ days
-        v250-v290: Additional behavioral indicators
-        """
-        logger.info(f"Generating behavioral data (v-columns) for {n} records...")
-        
-        # V-column ranges by profile (min, max)
-        v_config = {
-            'excellent': {
-                'v205': (0, 0), 'v210': (0, 0), 'v220': (0, 0),
-                'v230': (0, 0), 'v240': (0, 0), 'v245': (0, 0)
-            },
-            'good': {
-                'v205': (0, 100), 'v210': (0, 50), 'v220': (0, 0),
-                'v230': (0, 0), 'v240': (0, 0), 'v245': (0, 0)
-            },
-            'moderate': {
-                'v205': (50, 500), 'v210': (0, 200), 'v220': (0, 100),
-                'v230': (0, 0), 'v240': (0, 0), 'v245': (0, 0)
-            },
-            'risky': {
-                'v205': (200, 2000), 'v210': (100, 500), 'v220': (50, 300),
-                'v230': (0, 150), 'v240': (0, 50), 'v245': (0, 0)
-            },
-            'default': {
-                'v205': (1000, 5000), 'v210': (500, 2000), 'v220': (300, 1500),
-                'v230': (200, 1000), 'v240': (100, 500), 'v245': (50, 300)
-            }
-        }
-        
-        data = {}
-        v_cols = ['v205', 'v210', 'v220', 'v230', 'v240', 'v245']
-        
-        for v_col in v_cols:
-            values = np.zeros(n)
-            for i, profile in enumerate(profiles):
-                min_val, max_val = v_config[profile][v_col]
-                if max_val > 0:
-                    # Use exponential distribution for realistic tail
-                    scale = (max_val - min_val) / 3
-                    values[i] = min_val + np.random.exponential(scale)
-                    values[i] = np.clip(values[i], min_val, max_val * 1.5)
-                else:
-                    values[i] = 0
-            data[v_col] = values.round(0)
-        
-        # Additional v-columns (v250-v290) - other behavioral indicators
-        for v_col in ['v250', 'v255', 'v260', 'v270', 'v280', 'v290']:
-            values = np.zeros(n)
-            for i, profile in enumerate(profiles):
-                if profile in ['excellent', 'good']:
-                    values[i] = 0
-                elif profile == 'moderate':
-                    values[i] = np.random.exponential(50) if np.random.random() < 0.2 else 0
-                elif profile == 'risky':
-                    values[i] = np.random.exponential(150) if np.random.random() < 0.4 else 0
-                else:  # default
-                    values[i] = np.random.exponential(300) if np.random.random() < 0.6 else 0
-            data[v_col] = values.round(0)
-        
-        return pd.DataFrame(data)
-    
-    def generate_scr_data(self, n: int, profiles: np.ndarray) -> pd.DataFrame:
-        """
-        Generate SCR (Credit Bureau) data.
-        
-        scr_score_risco: 0-7 (0=AA, 7=H - higher is worse)
-        scr_dias_atraso: Days in arrears
-        scr_tem_prejuizo: Has loss record (0/1)
-        """
-        logger.info(f"Generating SCR data for {n} records...")
-        
-        # SCR score by profile (lower is better, range 0-7)
-        scr_score_config = {
-            'excellent': (0, 1),
-            'good': (0, 2),
-            'moderate': (1, 4),
-            'risky': (3, 6),
-            'default': (5, 7)
-        }
-        
-        # Days in arrears by profile
-        dias_config = {
-            'excellent': (0, 0),
-            'good': (0, 15),
-            'moderate': (0, 45),
-            'risky': (15, 90),
-            'default': (60, 365)
-        }
-        
-        data = {}
-        
-        # SCR Score
-        scores = np.zeros(n)
-        for i, profile in enumerate(profiles):
-            min_s, max_s = scr_score_config[profile]
-            scores[i] = np.random.randint(min_s, max_s + 1)
-        data['scr_score_risco'] = scores.astype(int)
-        
-        # Days in arrears
-        dias = np.zeros(n)
-        for i, profile in enumerate(profiles):
-            min_d, max_d = dias_config[profile]
-            if max_d > 0:
-                dias[i] = np.random.exponential((max_d - min_d) / 2) + min_d
-                dias[i] = np.clip(dias[i], min_d, max_d * 1.2)
-            else:
-                dias[i] = 0
-        data['scr_dias_atraso'] = dias.astype(int)
-        
-        # Has loss record
-        prejuizo_prob = {
-            'excellent': 0.0, 'good': 0.01, 'moderate': 0.05,
-            'risky': 0.15, 'default': 0.50
-        }
-        data['scr_tem_prejuizo'] = [
-            1 if np.random.random() < prejuizo_prob[p] else 0
-            for p in profiles
-        ]
-        
-        return pd.DataFrame(data)
-    
-    def generate_credit_data(self, n: int, profiles: np.ndarray, renda: np.ndarray) -> pd.DataFrame:
-        """Generate credit limit and utilization data."""
-        logger.info(f"Generating credit data for {n} records...")
-        
-        # Limit multipliers by profile
-        limit_mult = {
-            'excellent': (8, 15), 'good': (5, 10), 'moderate': (3, 7),
-            'risky': (1, 4), 'default': (0.5, 2)
-        }
-        
-        # Utilization rate by profile (higher for risky)
-        util_config = {
-            'excellent': (0.10, 0.40),
-            'good': (0.20, 0.50),
-            'moderate': (0.40, 0.70),
-            'risky': (0.60, 0.90),
-            'default': (0.80, 1.00)
-        }
-        
-        data = {}
-        
-        limits = np.zeros(n)
-        used = np.zeros(n)
-        
-        for i, (profile, income) in enumerate(zip(profiles, renda)):
-            min_m, max_m = limit_mult[profile]
-            limits[i] = income * np.random.uniform(min_m, max_m)
-            
-            min_u, max_u = util_config[profile]
-            util_rate = np.random.uniform(min_u, max_u)
-            used[i] = limits[i] * util_rate
-        
-        data['limite_total'] = limits.round(2)
-        data['limite_utilizado'] = used.round(2)
-        data['taxa_utilizacao'] = (used / np.maximum(limits, 1)).round(4)
-        
-        # Income commitment ratio
-        parcelas = used / 48  # Approximate monthly payment
-        data['parcelas_mensais'] = parcelas.round(2)
-        data['comprometimento_renda'] = (parcelas / np.maximum(renda, 1)).round(4)
-        data['margem_disponivel'] = (renda * 0.35 - parcelas).round(2)
-        
-        # Utilization history
-        data['utilizacao_media_12m'] = (data['taxa_utilizacao'] * np.random.uniform(0.8, 1.2, n)).round(4)
-        data['trimestres_sem_uso'] = np.where(
-            data['taxa_utilizacao'] < 0.1,
-            np.random.choice([1, 2, 3, 4], n, p=[0.3, 0.3, 0.25, 0.15]),
-            np.random.choice([0, 1], n, p=[0.8, 0.2])
-        )
-        
-        # Max dias atraso 12m (from behavioral)
-        data['max_dias_atraso_12m'] = np.zeros(n)  # Will be updated later
-        
-        return pd.DataFrame(data)
-    
-    def generate_target_variable(self, n: int, profiles: np.ndarray) -> np.ndarray:
-        """
-        Generate target variable (CLASS) based on profile.
-        
-        CLASS = 1 means the client defaulted (bad)
-        CLASS = 0 means the client is good
-        """
-        logger.info(f"Generating target variable for {n} records...")
-        
-        # Default probability by profile
-        default_prob = {
-            'excellent': 0.02,
-            'good': 0.05,
-            'moderate': 0.15,
-            'risky': 0.35,
-            'default': 0.70
-        }
-        
-        targets = np.array([
-            1 if np.random.random() < default_prob[p] else 0
-            for p in profiles
-        ])
-        
-        return targets
-    
-    def generate_full_dataset(self) -> pd.DataFrame:
-        """Generate the complete PRINAD training dataset."""
+            p1 = np.random.randint(100, 999)
+            p2 = np.random.randint(100, 999)
+            p3 = np.random.randint(100, 999)
+            p4 = np.random.randint(10, 99)
+            cpfs.append(f"{p1}{p2}{p3}{p4}")
+        return cpfs
+
+    def generate_full_portfolio(self) -> pd.DataFrame:
+        """Generate high-variance, multivariate credit risk dataset."""
         n = self.config.n_records
+        logger.info(f"Generating high-variance portfolio with {n} client records...")
         
-        logger.info("=" * 60)
-        logger.info(f"GENERATING PRINAD TRAINING DATA ({n} records)")
-        logger.info("=" * 60)
+        profiles = np.random.choice(self.PROFILES, n, p=self.PROFILE_WEIGHTS)
+        cpfs = self.generate_cpfs(n)
         
-        # Step 1: Generate risk profiles
-        profiles = self.generate_risk_profiles(n)
-        profile_dist = pd.Series(profiles).value_counts()
-        logger.info(f"Profile distribution:\n{profile_dist}")
+        # 1. Demographics & Cadastral
+        age_map = {
+            'A1_EXCELLENT': (48, 9), 'A2_GOOD': (43, 10), 'B1_MODERATE': (38, 11),
+            'B2_MEDIUM_RISK': (33, 10), 'C_HIGH_RISK': (28, 9), 'D_VERY_HIGH': (24, 6)
+        }
+        ages = [int(np.clip(np.random.normal(*age_map[p]), 18, 80)) for p in profiles]
         
-        # Step 2: Generate cadastral data
-        df_cadastral = self.generate_cadastral_data(n, profiles)
+        edu_choices = ['FUNDAM', 'MEDIO', 'SUPERIOR', 'POS']
+        edu_probs = {
+            'A1_EXCELLENT': [0.01, 0.14, 0.50, 0.35],
+            'A2_GOOD': [0.04, 0.25, 0.48, 0.23],
+            'B1_MODERATE': [0.12, 0.46, 0.32, 0.10],
+            'B2_MEDIUM_RISK': [0.22, 0.53, 0.20, 0.05],
+            'C_HIGH_RISK': [0.35, 0.51, 0.12, 0.02],
+            'D_VERY_HIGH': [0.48, 0.44, 0.07, 0.01]
+        }
+        escolaridade = [np.random.choice(edu_choices, p=edu_probs[p]) for p in profiles]
         
-        # Step 3: Generate behavioral data (v-columns)
-        df_behavioral = self.generate_behavioral_data(n, profiles)
+        base_income_map = {
+            'A1_EXCELLENT': 14500, 'A2_GOOD': 8800, 'B1_MODERATE': 5400,
+            'B2_MEDIUM_RISK': 3500, 'C_HIGH_RISK': 2400, 'D_VERY_HIGH': 1600
+        }
+        edu_mult = {'FUNDAM': 0.75, 'MEDIO': 1.0, 'SUPERIOR': 1.85, 'POS': 2.75}
+        renda_bruta = [
+            round(max(1412.0, np.random.normal(base_income_map[p] * edu_mult[e], base_income_map[p] * 0.22)), 2)
+            for p, e in zip(profiles, escolaridade)
+        ]
+        renda_liquida = [round(r * np.random.uniform(0.76, 0.84), 2) for r in renda_bruta]
         
-        # Step 4: Generate SCR data
-        df_scr = self.generate_scr_data(n, profiles)
+        tempo_relac_map = {
+            'A1_EXCELLENT': (84, 20), 'A2_GOOD': (54, 18), 'B1_MODERATE': (34, 15),
+            'B2_MEDIUM_RISK': (20, 10), 'C_HIGH_RISK': (10, 6), 'D_VERY_HIGH': (4, 3)
+        }
+        tempo_relac = [max(1, int(np.random.normal(*tempo_relac_map[p]))) for p in profiles]
         
-        # Step 5: Generate credit data
-        df_credit = self.generate_credit_data(n, profiles, df_cadastral['RENDA_BRUTA'].values)
-        
-        # Step 6: Generate target variable
-        targets = self.generate_target_variable(n, profiles)
-        
-        # Combine all data
-        df = pd.concat([df_cadastral, df_behavioral, df_scr, df_credit], axis=1)
-        df['CLASSE'] = targets
-        df['profile'] = profiles  # Keep for analysis
-        
-        # Update max_dias_atraso_12m from v-columns
-        df['max_dias_atraso_12m'] = df_scr['scr_dias_atraso']
-        
-        # Calculate derived fields (matching feature_engineer output)
-        df['produto'] = np.random.choice(
-            ['consignado', 'banparacard', 'cartao_credito', 'imobiliario', 'cheque_especial'],
-            n, p=[0.45, 0.20, 0.15, 0.10, 0.10]
+        estado_civil = np.random.choice(['CASADO', 'SOLTEIRO', 'DIVORCIADO', 'VIUVO'], n, p=[0.54, 0.30, 0.12, 0.04])
+        ocupacao = np.random.choice(
+            ['SERVIDOR PUBLICO', 'ASSALARIADO', 'EMPRESARIO', 'AUTONOMO', 'APOSENTADO'],
+            n, p=[0.22, 0.44, 0.11, 0.13, 0.10]
         )
+        tipo_residencia = np.random.choice(['PROPRIA', 'ALUGADA', 'FINANCIADA', 'CEDIDA'], n, p=[0.58, 0.23, 0.14, 0.05])
+        possui_veiculo = np.random.choice(['SIM', 'NAO'], n, p=[0.62, 0.38])
+        portabilidade = np.random.choice(['SIM', 'NAO'], n, p=[0.24, 0.76])
+        qt_dependentes = np.random.choice([0, 1, 2, 3, 4], n, p=[0.40, 0.32, 0.19, 0.07, 0.02])
         
-        # Add derived features that feature_engineer creates
-        # Age features
-        df['em_idade_ativa'] = ((df['IDADE_CLIENTE'] >= 18) & (df['IDADE_CLIENTE'] <= 65)).astype(int)
-        df['idade_squared'] = df['IDADE_CLIENTE'] ** 2
+        # 2. Financial & Debt Metrics
+        comp_renda_map = {
+            'A1_EXCELLENT': (0.10, 0.04), 'A2_GOOD': (0.18, 0.06), 'B1_MODERATE': (0.32, 0.08),
+            'B2_MEDIUM_RISK': (0.47, 0.10), 'C_HIGH_RISK': (0.68, 0.11), 'D_VERY_HIGH': (0.86, 0.10)
+        }
+        comp_renda = [float(np.clip(np.random.normal(*comp_renda_map[p]), 0.01, 0.98)) for p in profiles]
         
-        # Relationship features
-        df['cliente_novo'] = (df['TEMPO_RELAC'] < 6).astype(int)
-        df['log_tempo_relac'] = np.log1p(df['TEMPO_RELAC'].clip(lower=0))
+        limite_total = [round(r * np.random.uniform(2.8, 9.5), 2) for r in renda_bruta]
+        limite_utilizado = [round(lim * comp, 2) for lim, comp in zip(limite_total, comp_renda)]
+        taxa_utilizacao = [round(u / max(lim, 1), 4) for u, lim in zip(limite_utilizado, limite_total)]
+        parcelas_mensais = [round(r * comp, 2) for r, comp in zip(renda_bruta, comp_renda)]
+        margem_disponivel = [round(max(0.0, r * 0.35 - p), 2) for r, p in zip(renda_bruta, parcelas_mensais)]
         
-        # Vehicle indicator
-        df['tem_veiculo'] = (df['POSSUI_VEICULO'] == 'SIM').astype(int)
+        # 3. Behavioral 24m Delinquency Vector (v205 to v290)
+        v_cols = ['v205', 'v210', 'v220', 'v230', 'v240', 'v245', 'v250', 'v255', 'v260', 'v270', 'v280', 'v290']
+        v_data = {v: np.zeros(n) for v in v_cols}
         
-        # Education score
-        education_score = {'FUNDAM': 0, 'MEDIO': 1, 'SUPERIOR': 2, 'POS': 3}
-        df['score_escolaridade'] = df['ESCOLARIDADE'].map(education_score).fillna(1)
+        v_prob_map = {
+            'A1_EXCELLENT': 0.001, 'A2_GOOD': 0.015, 'B1_MODERATE': 0.080,
+            'B2_MEDIUM_RISK': 0.280, 'C_HIGH_RISK': 0.680, 'D_VERY_HIGH': 0.940
+        }
         
-        # Marital status score
-        marital_score = {'CASADO': -0.1, 'SOLTEIRO': 0.1, 'DIVORCIADO': 0.05, 'VIUVO': 0}
-        df['score_estado_civil'] = df['ESTADO_CIVIL'].map(marital_score).fillna(0)
+        for i, p in enumerate(profiles):
+            prob = v_prob_map[p]
+            if np.random.random() < prob:
+                v_data['v205'][i] = round(np.random.exponential(500) + 100, 2)
+                if np.random.random() < prob * 0.85:
+                    v_data['v210'][i] = round(np.random.exponential(800) + 200, 2)
+                if np.random.random() < prob * 0.70:
+                    v_data['v220'][i] = round(np.random.exponential(1200) + 400, 2)
+                if np.random.random() < prob * 0.50:
+                    v_data['v240'][i] = round(np.random.exponential(2000) + 800, 2)
+                if np.random.random() < prob * 0.35:
+                    v_data['v290'][i] = round(np.random.exponential(4000) + 1500, 2)
+                    
+        # 4. Central Bank SCR Bureau Data
+        scr_rating_map = {
+            'A1_EXCELLENT': ['AA', 'AA', 'A'],
+            'A2_GOOD': ['AA', 'A', 'B'],
+            'B1_MODERATE': ['B', 'C', 'C'],
+            'B2_MEDIUM_RISK': ['C', 'D', 'E'],
+            'C_HIGH_RISK': ['E', 'F', 'G'],
+            'D_VERY_HIGH': ['G', 'H', 'H']
+        }
+        scr_classificacao = [np.random.choice(scr_rating_map[p]) for p in profiles]
+        scr_score_map = {'AA': 0, 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8}
+        scr_score_risco = [scr_score_map[r] for r in scr_classificacao]
         
-        # Log statistics
-        logger.info("=" * 60)
-        logger.info("DATASET STATISTICS")
-        logger.info("=" * 60)
-        logger.info(f"Total records: {len(df)}")
-        logger.info(f"Default rate: {df['CLASSE'].mean():.2%}")
-        logger.info(f"Profile distribution: {df['profile'].value_counts().to_dict()}")
-        logger.info(f"Columns: {list(df.columns)}")
+        scr_dias_atraso = []
+        scr_tem_prejuizo = []
+        scr_valor_vencido = []
+        scr_valor_prejuizo = []
         
+        for p, r in zip(profiles, scr_classificacao):
+            if r in ['AA', 'A', 'B']:
+                dias = int(np.random.choice([0, 3], p=[0.96, 0.04]))
+                prej = 0
+                venc = 0.0
+                prej_val = 0.0
+            elif r in ['C', 'D']:
+                dias = int(np.random.exponential(20))
+                prej = 1 if np.random.random() < 0.03 else 0
+                venc = round(np.random.exponential(900), 2) if dias > 0 else 0.0
+                prej_val = round(np.random.exponential(1500), 2) if prej else 0.0
+            else:  # E, F, G, H
+                dias = int(np.random.exponential(100) + 40)
+                prej = 1 if np.random.random() < 0.55 else 0
+                venc = round(np.random.exponential(4500) + 800, 2)
+                prej_val = round(np.random.exponential(6500) + 1500, 2) if prej else 0.0
+                
+            scr_dias_atraso.append(dias)
+            scr_tem_prejuizo.append(prej)
+            scr_valor_vencido.append(venc)
+            scr_valor_prejuizo.append(prej_val)
+
+        # 5. Econometric Latent Default Probability Function
+        # Multi-factor Logit model with realistic financial and behavioral elasticity
+        logit_z = np.zeros(n)
+        for i in range(n):
+            # Financial burden term
+            z_fin = 3.8 * comp_renda[i] + 2.2 * taxa_utilizacao[i] - 0.45 * np.log1p(renda_bruta[i] / 1000.0)
+            
+            # Behavioral arrears term
+            has_delinq = 1.0 if (v_data['v205'][i] > 0 or v_data['v220'][i] > 0) else 0.0
+            severe_delinq = 1.0 if (v_data['v240'][i] > 0 or v_data['v290'][i] > 0) else 0.0
+            z_beh = 1.8 * has_delinq + 3.2 * severe_delinq
+            
+            # Bureau SCR term
+            z_bureau = 0.65 * scr_score_risco[i] + 2.5 * scr_tem_prejuizo[i] + 0.015 * min(scr_dias_atraso[i], 180)
+            
+            # Demographic stability term
+            z_stab = -0.30 * np.log1p(tempo_relac[i]) - 0.02 * (ages[i] - 18)
+            
+            # Noise
+            eps = np.random.normal(0, 0.45)
+            
+            # Offset baseline: -4.8 sets the baseline default rate around 18%
+            logit_z[i] = -4.8 + z_fin + z_beh + z_bureau + z_stab + eps
+            
+        prob_default = 1.0 / (1.0 + np.exp(-logit_z))
+        targets = (np.random.random(n) < prob_default).astype(int)
+        
+        # 6. Vintage / Safra & Product Allocation
+        safras = np.random.choice(
+            ['2024-01', '2024-06', '2024-12', '2025-06', '2025-12', '2026-01'],
+            n, p=[0.15, 0.15, 0.20, 0.20, 0.15, 0.15]
+        )
+        produtos = np.random.choice(
+            ['consignado', 'cartao_credito', 'credito_pessoal', 'financiamento_veiculos', 'imobiliario'],
+            n, p=[0.35, 0.25, 0.20, 0.12, 0.08]
+        )
+
+        df = pd.DataFrame({
+            'CPF': cpfs,
+            'CLIT': np.arange(1, n + 1),
+            'safra': safras,
+            'produto': produtos,
+            'IDADE_CLIENTE': ages,
+            'ESCOLARIDADE': escolaridade,
+            'ESTADO_CIVIL': estado_civil,
+            'OCUPACAO': ocupacao,
+            'TIPO_RESIDENCIA': tipo_residencia,
+            'POSSUI_VEICULO': possui_veiculo,
+            'PORTABILIDADE': portabilidade,
+            'QT_DEPENDENTES': qt_dependentes,
+            'RENDA_BRUTA': renda_bruta,
+            'RENDA_LIQUIDA': renda_liquida,
+            'TEMPO_RELAC': tempo_relac,
+            'QT_PRODUTOS': np.random.randint(1, 6, n),
+            'COMP_RENDA': comp_renda,
+            'limite_total': limite_total,
+            'limite_utilizado': limite_utilizado,
+            'taxa_utilizacao': taxa_utilizacao,
+            'parcelas_mensais': parcelas_mensais,
+            'margem_disponivel': margem_disponivel,
+            'max_dias_atraso_12m': scr_dias_atraso,
+            'scr_classificacao_risco': scr_classificacao,
+            'scr_score_risco': scr_score_risco,
+            'scr_dias_atraso': scr_dias_atraso,
+            'scr_valor_vencido': scr_valor_vencido,
+            'scr_valor_prejuizo': scr_valor_prejuizo,
+            'scr_tem_prejuizo': scr_tem_prejuizo,
+            'CLASSE': targets
+        })
+        
+        for v in v_cols:
+            df[v] = v_data[v]
+            
+        logger.info(f"Generated {len(df)} samples | Default Rate: {df['CLASSE'].mean():.2%}")
         return df
-    
-    def generate_and_save(self, output_path: Optional[Path] = None) -> pd.DataFrame:
-        """Generate dataset and save to CSV."""
-        df = self.generate_full_dataset()
+
+    def save_datasets(self) -> Dict[str, Path]:
+        """Save training, test, cadastral, behavioral, and SCR CSV tables."""
+        df_full = self.generate_full_portfolio()
+        paths = {}
         
-        if output_path is None:
-            output_path = DADOS_DIR / 'base_prinad_treino.csv'
+        # 1. Master Training Table
+        train_path = DADOS_DIR / "base_prinad_treino.csv"
+        df_full.to_csv(train_path, sep=';', index=False, encoding='latin-1')
+        paths['train'] = train_path
         
-        # Remove profile column before saving (internal use only)
-        df_save = df.drop(columns=['profile'])
+        # 2. Client Database for Inference (5,000 sample)
+        clientes_path = DADOS_DIR / "base_clientes.csv"
+        df_sample = df_full.head(5000).copy()
+        df_sample.to_csv(clientes_path, sep=';', index=False, encoding='latin-1')
+        paths['clientes'] = clientes_path
         
-        # Save training dataset
-        df_save.to_csv(output_path, sep=';', encoding='latin-1', index=False)
-        logger.info(f"Training dataset saved to {output_path}")
-        logger.info(f"Final shape: {df_save.shape}")
+        # 3. Cadastral Database
+        cadastral_cols = ['CPF', 'CLIT', 'IDADE_CLIENTE', 'ESCOLARIDADE', 'ESTADO_CIVIL', 
+                          'OCUPACAO', 'TIPO_RESIDENCIA', 'POSSUI_VEICULO', 'PORTABILIDADE', 
+                          'QT_DEPENDENTES', 'RENDA_BRUTA', 'RENDA_LIQUIDA', 'TEMPO_RELAC', 'COMP_RENDA']
+        cad_path = DADOS_DIR / "base_cadastro.csv"
+        df_sample[cadastral_cols].to_csv(cad_path, sep=';', index=False, encoding='latin-1')
+        paths['cadastro'] = cad_path
         
-        # Also save as base_clientes.csv for API use (subset of records)
-        base_clientes_path = DADOS_DIR / 'base_clientes.csv'
-        # Take a sample for inference testing
-        df_clientes = df_save.sample(n=min(1000, len(df_save)), random_state=42).copy()
-        df_clientes.to_csv(base_clientes_path, sep=';', encoding='latin-1', index=False)
-        logger.info(f"API dataset saved to {base_clientes_path} ({len(df_clientes)} records)")
+        # 4. Behavioral Database (3040)
+        v_cols = ['v205', 'v210', 'v220', 'v230', 'v240', 'v245', 'v250', 'v255', 'v260', 'v270', 'v280', 'v290']
+        comp_cols = ['CPF'] + v_cols + ['CLASSE']
+        comp_path = DADOS_DIR / "base_3040.csv"
+        df_sample[comp_cols].to_csv(comp_path, sep=';', index=False, encoding='latin-1')
+        paths['comportamental'] = comp_path
         
-        return df
+        # 5. SCR Bureau Database
+        scr_cols = ['CPF', 'scr_classificacao_risco', 'scr_score_risco', 'scr_dias_atraso', 
+                    'scr_valor_vencido', 'scr_valor_prejuizo', 'scr_tem_prejuizo']
+        scr_path = DADOS_DIR / "scr_mock_data.csv"
+        df_sample[scr_cols].to_csv(scr_path, index=False, encoding='utf-8')
+        paths['scr'] = scr_path
+        
+        logger.info(f"All 5 datasets generated and saved in {DADOS_DIR}")
+        return paths
 
 
 def main():
-    """Main function to generate PRINAD training data."""
-    print("=" * 60)
-    print("PRINAD - Data Consolidator")
-    print("=" * 60)
-    
-    config = PRINADConfig(
-        n_records=50000,  # 50k records
-        bad_rate=0.15,    # 15% default rate
-        noise_level=0.10
-    )
-    
-    generator = PRINADDataGenerator(config)
-    df = generator.generate_and_save()
-    
-    print(f"\n✅ Dataset generated successfully!")
-    print(f"   Records: {len(df)}")
-    print(f"   Default rate: {df['CLASSE'].mean():.2%}")
-    print(f"   Output: {DADOS_DIR / 'base_prinad_treino.csv'}")
-    
-    # Show sample
-    print("\n📊 Sample data:")
-    print(df[['CPF', 'IDADE_CLIENTE', 'RENDA_BRUTA', 'v205', 'v210', 
-              'scr_score_risco', 'scr_dias_atraso', 'CLASSE']].head(10).to_string())
-    
-    # Show class distribution by profile
-    print("\n📈 Class distribution by profile:")
-    print(df.groupby('profile')['CLASSE'].agg(['count', 'sum', 'mean']).round(3))
-    
-    return df
+    generator = PRINADDataGenerator()
+    paths = generator.save_datasets()
+    print("\n[OK] Datasets gerados com sucesso:")
+    for k, p in paths.items():
+        print(f"  - {k}: {p}")
 
 
 if __name__ == "__main__":
