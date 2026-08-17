@@ -6,9 +6,9 @@ import numpy as np
 import sys
 from pathlib import Path
 
-MODELOS_DIR = Path(__file__).resolve().parent.parent / "modelos"
-if str(MODELOS_DIR) not in sys.path:
-    sys.path.insert(0, str(MODELOS_DIR))
+MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
+if str(MODELS_DIR) not in sys.path:
+    sys.path.insert(0, str(MODELS_DIR))
 
 from vasicek_macro import VasicekMacroEngine
 from lifetime_pd import LifetimePDEngine

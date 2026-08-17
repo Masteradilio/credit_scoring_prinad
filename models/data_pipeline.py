@@ -1,7 +1,7 @@
 """
 PRINAD - Data Pipeline & Ingestion Module
 =========================================
-Handles data loading, CPF normalization, preprocessing, and feature matrix preparation.
+Handles synthetic data loading, CPF normalization, preprocessing, and feature matrix preparation.
 
 Author: PRINAD Quantitative Risk Team
 """
@@ -16,7 +16,7 @@ import re
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DADOS_DIR = BASE_DIR / "dados"
+SYNTH_DATA_DIR = BASE_DIR / "synth_data"
 
 
 def normalize_cpf(cpf: Any) -> Optional[str]:
@@ -39,19 +39,19 @@ def load_prinad_training_data(
     filepath: Optional[Path] = None
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series]:
     """
-    Load the master training dataset (base_prinad_treino.csv).
+    Load the synthetic master training dataset (synth_master_training.csv).
     
     Returns:
         Tuple of (full DataFrame, X feature matrix, y target series)
     """
-    path = filepath or (DADOS_DIR / "base_prinad_treino.csv")
+    path = filepath or (SYNTH_DATA_DIR / "synth_master_training.csv")
     if not path.exists():
-        logger.warning(f"File {path} not found. Running generator...")
-        from data_consolidator_prinad import PRINADDataGenerator
+        logger.warning(f"File {path} not found. Running synthetic generator...")
+        from synthetic_data_generator import PRINADDataGenerator
         gen = PRINADDataGenerator()
         gen.save_datasets()
         
-    logger.info(f"Loading master dataset from {path}")
+    logger.info(f"Loading synthetic master dataset from {path}")
     df = pd.read_csv(path, sep=';', encoding='latin-1')
     
     if 'CLASSE' not in df.columns:
@@ -72,7 +72,7 @@ def load_prinad_training_data(
 
 def load_client_database(filepath: Optional[Path] = None) -> pd.DataFrame:
     """Load active client records for online inference."""
-    path = filepath or (DADOS_DIR / "base_clientes.csv")
+    path = filepath or (SYNTH_DATA_DIR / "synth_client_database.csv")
     if not path.exists():
         df, _, _ = load_prinad_training_data()
         return df.head(1000)

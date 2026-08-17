@@ -30,12 +30,12 @@ import sys
 
 # Paths
 CURRENT_DIR = Path(__file__).resolve().parent
-MODELOS_DIR = CURRENT_DIR.parent / "modelos"
-ARTEFATOS_DIR = CURRENT_DIR.parent / "artefatos"
-DADOS_DIR = CURRENT_DIR.parent / "dados"
+MODELS_DIR = CURRENT_DIR.parent / "models"
+ARTIFACTS_DIR = CURRENT_DIR.parent / "artifacts"
+SYNTH_DATA_DIR = CURRENT_DIR.parent / "synth_data"
 
-if str(MODELOS_DIR) not in sys.path:
-    sys.path.insert(0, str(MODELOS_DIR))
+if str(MODELS_DIR) not in sys.path:
+    sys.path.insert(0, str(MODELS_DIR))
 
 from classifier import PRINADClassifier, ClassificationResult
 from vasicek_macro import VasicekMacroEngine
@@ -325,7 +325,7 @@ async def get_models_benchmark():
     """
     Retorna o relatório completo de validação comparativa Champion vs. Challengers nos 4 pilares.
     """
-    report_path = ARTEFATOS_DIR / "model_comparison_report.json"
+    report_path = ARTIFACTS_DIR / "model_comparison_report.json"
     if not report_path.exists():
         raise HTTPException(status_code=404, detail="Relatório de benchmark não encontrado.")
     with open(report_path, "r", encoding="utf-8") as f:

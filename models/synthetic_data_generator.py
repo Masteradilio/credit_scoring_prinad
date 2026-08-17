@@ -32,8 +32,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-DADOS_DIR = BASE_DIR / "dados"
-DADOS_DIR.mkdir(parents=True, exist_ok=True)
+SYNTH_DATA_DIR = BASE_DIR / "synth_data"
+SYNTH_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 np.random.seed(42)
 
@@ -277,12 +277,12 @@ class PRINADDataGenerator:
         paths = {}
         
         # 1. Master Training Table
-        train_path = DADOS_DIR / "base_prinad_treino.csv"
+        train_path = SYNTH_DATA_DIR / "synth_master_training.csv"
         df_full.to_csv(train_path, sep=';', index=False, encoding='latin-1')
         paths['train'] = train_path
         
         # 2. Client Database for Inference (5,000 sample)
-        clientes_path = DADOS_DIR / "base_clientes.csv"
+        clientes_path = SYNTH_DATA_DIR / "synth_client_database.csv"
         df_sample = df_full.head(5000).copy()
         df_sample.to_csv(clientes_path, sep=';', index=False, encoding='latin-1')
         paths['clientes'] = clientes_path
@@ -291,25 +291,25 @@ class PRINADDataGenerator:
         cadastral_cols = ['CPF', 'CLIT', 'IDADE_CLIENTE', 'ESCOLARIDADE', 'ESTADO_CIVIL', 
                           'OCUPACAO', 'TIPO_RESIDENCIA', 'POSSUI_VEICULO', 'PORTABILIDADE', 
                           'QT_DEPENDENTES', 'RENDA_BRUTA', 'RENDA_LIQUIDA', 'TEMPO_RELAC', 'COMP_RENDA']
-        cad_path = DADOS_DIR / "base_cadastro.csv"
+        cad_path = SYNTH_DATA_DIR / "synth_cadastral.csv"
         df_sample[cadastral_cols].to_csv(cad_path, sep=';', index=False, encoding='latin-1')
         paths['cadastro'] = cad_path
         
         # 4. Behavioral Database (3040)
         v_cols = ['v205', 'v210', 'v220', 'v230', 'v240', 'v245', 'v250', 'v255', 'v260', 'v270', 'v280', 'v290']
         comp_cols = ['CPF'] + v_cols + ['CLASSE']
-        comp_path = DADOS_DIR / "base_3040.csv"
+        comp_path = SYNTH_DATA_DIR / "synth_behavioral_3040.csv"
         df_sample[comp_cols].to_csv(comp_path, sep=';', index=False, encoding='latin-1')
         paths['comportamental'] = comp_path
         
         # 5. SCR Bureau Database
         scr_cols = ['CPF', 'scr_classificacao_risco', 'scr_score_risco', 'scr_dias_atraso', 
                     'scr_valor_vencido', 'scr_valor_prejuizo', 'scr_tem_prejuizo']
-        scr_path = DADOS_DIR / "scr_mock_data.csv"
+        scr_path = SYNTH_DATA_DIR / "synth_scr_bureau.csv"
         df_sample[scr_cols].to_csv(scr_path, index=False, encoding='utf-8')
         paths['scr'] = scr_path
         
-        logger.info(f"All 5 datasets generated and saved in {DADOS_DIR}")
+        logger.info(f"All 5 synthetic datasets generated and saved in {SYNTH_DATA_DIR}")
         return paths
 
 

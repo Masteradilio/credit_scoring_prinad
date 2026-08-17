@@ -54,8 +54,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-ARTEFATOS_DIR = BASE_DIR / "artefatos"
-ARTEFATOS_DIR.mkdir(parents=True, exist_ok=True)
+ARTIFACTS_DIR = BASE_DIR / "artifacts"
+ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -254,19 +254,19 @@ def execute_full_training_pipeline() -> Dict[str, Any]:
     else:
         logger.info("SHAP not available in environment; using Glass-box Scorecard Points.")
         
-    # 9. Save Artifacts to `artefatos/`
-    logger.info(f"Saving binary models and validation reports to {ARTEFATOS_DIR}...")
+    # 9. Save Artifacts to `artifacts/`
+    logger.info(f"Saving binary models and validation reports to {ARTIFACTS_DIR}...")
     
-    joblib.dump(champion_scorecard, ARTEFATOS_DIR / "scorecard_model.joblib")
-    joblib.dump(challengers['lightgbm'], ARTEFATOS_DIR / "lightgbm_model.joblib")
-    joblib.dump(challengers['xgboost'], ARTEFATOS_DIR / "xgboost_model.joblib")
-    joblib.dump(challengers['ensemble'], ARTEFATOS_DIR / "ensemble_model.joblib")
-    joblib.dump(preprocessor, ARTEFATOS_DIR / "preprocessor.joblib")
-    joblib.dump(fe, ARTEFATOS_DIR / "feature_engineer.joblib")
-    joblib.dump(list(X_fe.columns), ARTEFATOS_DIR / "feature_names.joblib")
+    joblib.dump(champion_scorecard, ARTIFACTS_DIR / "scorecard_model.joblib")
+    joblib.dump(challengers['lightgbm'], ARTIFACTS_DIR / "lightgbm_model.joblib")
+    joblib.dump(challengers['xgboost'], ARTIFACTS_DIR / "xgboost_model.joblib")
+    joblib.dump(challengers['ensemble'], ARTIFACTS_DIR / "ensemble_model.joblib")
+    joblib.dump(preprocessor, ARTIFACTS_DIR / "preprocessor.joblib")
+    joblib.dump(fe, ARTIFACTS_DIR / "feature_engineer.joblib")
+    joblib.dump(list(X_fe.columns), ARTIFACTS_DIR / "feature_names.joblib")
     
     if shap_explainer:
-        joblib.dump(shap_explainer, ARTEFATOS_DIR / "shap_explainer.joblib")
+        joblib.dump(shap_explainer, ARTIFACTS_DIR / "shap_explainer.joblib")
         
     # Save JSON Reports
     report_data = {
@@ -278,7 +278,7 @@ def execute_full_training_pipeline() -> Dict[str, Any]:
         'detailed_validation': detailed_reports
     }
     
-    with open(ARTEFATOS_DIR / "model_comparison_report.json", "w", encoding="utf-8") as f:
+    with open(ARTIFACTS_DIR / "model_comparison_report.json", "w", encoding="utf-8") as f:
         json.dump(report_data, f, indent=2, cls=NumpyEncoder)
         
     logger.info("Master Training Pipeline Completed Successfully!")

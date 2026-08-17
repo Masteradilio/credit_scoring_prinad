@@ -23,12 +23,12 @@ import sys
 
 # Setup paths
 BASE_DIR = Path(__file__).resolve().parent.parent
-MODELOS_DIR = BASE_DIR / "modelos"
-ARTEFATOS_DIR = BASE_DIR / "artefatos"
-DADOS_DIR = BASE_DIR / "dados"
+MODELS_DIR = BASE_DIR / "models"
+ARTIFACTS_DIR = BASE_DIR / "artifacts"
+SYNTH_DATA_DIR = BASE_DIR / "synth_data"
 
-if str(MODELOS_DIR) not in sys.path:
-    sys.path.insert(0, str(MODELOS_DIR))
+if str(MODELS_DIR) not in sys.path:
+    sys.path.insert(0, str(MODELS_DIR))
 
 from classifier import PRINADClassifier, RatingMasterScale
 from vasicek_macro import VasicekMacroEngine
@@ -69,7 +69,7 @@ def get_classifier():
 
 @st.cache_data
 def get_benchmark_report():
-    report_path = ARTEFATOS_DIR / "model_comparison_report.json"
+    report_path = ARTIFACTS_DIR / "model_comparison_report.json"
     if report_path.exists():
         with open(report_path, "r", encoding="utf-8") as f:
             return json.load(f)

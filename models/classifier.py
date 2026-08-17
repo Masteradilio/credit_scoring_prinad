@@ -37,7 +37,7 @@ from feature_engineering import FeatureEngineer
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-ARTEFATOS_DIR = BASE_DIR / "artefatos"
+ARTIFACTS_DIR = BASE_DIR / "artifacts"
 
 
 @dataclass
@@ -128,25 +128,25 @@ class PRINADClassifier:
         self._load_artifacts()
 
     def _load_artifacts(self):
-        """Load trained model binaries from `artefatos/`."""
+        """Load trained model binaries from `artifacts/`."""
         try:
-            sc_path = ARTEFATOS_DIR / "scorecard_model.joblib"
+            sc_path = ARTIFACTS_DIR / "scorecard_model.joblib"
             if sc_path.exists():
                 self.scorecard_model = joblib.load(sc_path)
                 
-            lgb_path = ARTEFATOS_DIR / "lightgbm_model.joblib"
+            lgb_path = ARTIFACTS_DIR / "lightgbm_model.joblib"
             if lgb_path.exists():
                 self.lightgbm_model = joblib.load(lgb_path)
                 
-            xgb_path = ARTEFATOS_DIR / "xgboost_model.joblib"
+            xgb_path = ARTIFACTS_DIR / "xgboost_model.joblib"
             if xgb_path.exists():
                 self.xgboost_model = joblib.load(xgb_path)
                 
-            ens_path = ARTEFATOS_DIR / "ensemble_model.joblib"
+            ens_path = ARTIFACTS_DIR / "ensemble_model.joblib"
             if ens_path.exists():
                 self.ensemble_model = joblib.load(ens_path)
                 
-            prep_path = ARTEFATOS_DIR / "preprocessor.joblib"
+            prep_path = ARTIFACTS_DIR / "preprocessor.joblib"
             if prep_path.exists():
                 self.preprocessor = joblib.load(prep_path)
                 
