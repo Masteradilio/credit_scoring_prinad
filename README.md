@@ -3,7 +3,7 @@
 <div align="center">
 
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-v3.0.0-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-v3.1.0-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B.svg?logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![Regulatory Standard](https://img.shields.io/badge/Regulatory-Basel%20III%2FIV%20IRB%20%7C%20IFRS%209%20%7C%20BACEN%204.966-gold.svg)](#-regulatory--methodological-framework)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -21,7 +21,7 @@
 <details open>
 <summary><h2 style="display:inline-block;" id="-versão-em-português">🇧🇷 Versão em Português (Clique para alternar / recolher)</h2></summary>
 
-> **PRINAD** é um motor de risco de crédito quantitativo de padrão bancário internacional construído em total conformidade com as diretrizes de **Basileia III/IV (Abordagem Baseada em Classificações Internas - IRB)**, **IFRS 9 / CECL** e **Resolução BACEN 4.966**. O sistema adota uma arquitetura **Champion vs. Challenger**, combinando a transparência auditável do **Scorecard Regulatório (WoE & Regressão Logística)** com a capacidade preditiva de **Modelos de Gradient Boosting Calibrados (LightGBM, XGBoost, Stacking Ensemble)**, além de **Estresse Macroeconômico de Vasicek**, **Curvas de PD Lifetime de Markov** e **Precificação de Risco via RAROC**.
+> **PRINAD** é um motor de risco de crédito quantitativo de padrão bancário internacional construído em total conformidade com as diretrizes de **Basileia III/IV (Abordagem Baseada em Classificações Internas - IRB)**, **IFRS 9 / CECL** e **Resolução BACEN 4.966**. O sistema adota uma arquitetura **Champion vs. Challenger**, combinando a transparência auditável do **Scorecard Regulatório (WoE & Regressão Logística)** com a capacidade preditiva de **Modelos de Gradient Boosting Calibrados (LightGBM, XGBoost, Stacking Ensemble)**, além de **Estresse Macroeconômico de Vasicek**, **Curvas de PD Lifetime de Markov**, **Precificação de Risco via RAROC** e **Módulo de Observabilidade & EVALS em Tempo Real**.
 
 ---
 
@@ -32,11 +32,12 @@
 4. [Os 4 Pilares de Validação de Modelos](#4-os-4-pilares-de-validação-de-modelos)
 5. [Modelagem Macroeconômica (Vasicek ASRF) & IFRS 9](#5-modelagem-macroeconômica-vasicek-asrf--ifrs-9)
 6. [Aplicações Financeiras (Provisão ECL & Precificação RAROC)](#6-aplicações-financeiras-provisão-ecl--precificação-raroc)
-7. [Requisitos de Dados Sintéticos e Reais](#7-requisitos-de-dados-sintéticos-e-reais)
-8. [Dashboard Executivo Streamlit](#8-dashboard-executivo-streamlit)
-9. [API REST FastAPI & Exemplos cURL](#9-api-rest-fastapi--exemplos-curl)
-10. [Guia de Início Rápido & Testes Automatizados](#10-guia-de-início-rápido--testes-automatizados)
-11. [Perguntas & Respostas Técnicas (20 Questões de Estudo & Entrevista)](#11-perguntas--respostas-técnicas-20-questões)
+7. [Módulo de Observabilidade & Continuous EVALS](#7-módulo-de-observabilidade--continuous-evals)
+8. [Requisitos de Dados Sintéticos e Reais](#8-requisitos-de-dados-sintéticos-e-reais)
+9. [Dashboard Executivo Streamlit (6 Abas)](#9-dashboard-executivo-streamlit-6-abas)
+10. [API REST FastAPI v3.1 & Exemplos cURL](#10-api-rest-fastapi-v31--exemplos-curl)
+11. [Guia de Início Rápido & Testes Automatizados](#11-guia-de-início-rápido--testes-automatizados)
+12. [Perguntas & Respostas Técnicas (20 Questões de Estudo & Entrevista)](#12-perguntas--respostas-técnicas-20-questões)
 
 ---
 
@@ -47,6 +48,7 @@ O **PRINAD** resolve o dilema essencial da gestão de risco em bancos e fintechs
 - **Challengers de Machine Learning**: LightGBM, XGBoost com restrições monotônicas e Stacking Ensemble com calibração isotônica de probabilidades para evitar distorções de cauda.
 - **Camada Macroeconômica**: Conversão de $PD_{TTC}$ (Through-the-Cycle) em $PD_{PIT}$ (Point-in-Time) via Modelo de Vasicek ASRF para choques de PIB, Selic e Desemprego em 3 cenários IFRS 9.
 - **Camada de Decisão Financeira**: Estadiamento IFRS 9 / BACEN 4.966 (Stages 1, 2 e 3) e cálculo de taxa justa de empréstimo via RAROC sobre o capital econômico (99,9% VaR).
+- **Observabilidade & EVALS**: Monitoramento em tempo real de latências ($p50, p95, p99$), drift de dados contínuo via PSI, distribuição de ratings concedidos e alertas de conformidade.
 
 ---
 
@@ -72,6 +74,10 @@ graph TD
     F --> G1["Motor de Provisão IFRS 9 / BACEN 4.966<br/>(Provisões Stage 1, 2 e 3)"]
     F --> G2["Motor de Precificação RAROC & Custo de Capital<br/>(Taxa Justa de Empréstimo & 99,9% VaR)"]
     F --> G3["Otimizador de Ponto de Corte (Cut-off)<br/>(Maximização do Lucro Líquido da Carteira)"]
+    
+    G1 --> H["📈 Motor de Observabilidade & Continuous EVALS<br/>(Telemetria, Real-time PSI Drift, Mix de Ratings, Alertas)"]
+    G2 --> H
+    G3 --> H
 ```
 
 ---
@@ -90,8 +96,6 @@ Avaliados em base de teste out-of-sample ($N = 15.000$ contratos independentes, 
 ---
 
 ### 4. Os 4 Pilares de Validação de Modelos
-
-O PRINAD implementa rigorosamente a estrutura dos 4 Pilares exigidos pelo Comitê de Basileia (BCBS 328) e EBA:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -112,10 +116,9 @@ O PRINAD implementa rigorosamente a estrutura dos 4 Pilares exigidos pelo Comit�
 
 ### 5. Modelagem Macroeconômica (Vasicek ASRF) & IFRS 9
 
-Para condicionar o risco ao ciclo econômico, o modelo aplica a formulação **Vasicek ASRF**:
 $$PD_{PIT}(Z) = \Phi\left( \frac{\Phi^{-1}(PD_{TTC}) - \sqrt{\rho} Z}{\sqrt{1 - \rho}} \right)$$
 
-Onde $Z$ sintetiza choques em PIB, Selic e Desemprego ponderados em 3 cenários IFRS 9:
+Ponderação prospectiva multicenário:
 $$PD_{\text{Ponderada}} = 0.50 \cdot PD(Z_{\text{Base}}) + 0.25 \cdot PD(Z_{\text{Otimista}}) + 0.25 \cdot PD(Z_{\text{Adverso}})$$
 
 ---
@@ -131,7 +134,28 @@ $$PD_{\text{Ponderada}} = 0.50 \cdot PD(Z_{\text{Base}}) + 0.25 \cdot PD(Z_{\tex
 
 ---
 
-### 7. Requisitos de Dados Sintéticos e Reais
+### 7. Módulo de Observabilidade & Continuous EVALS
+
+O módulo [`api/api_monitoring.py`](file:///c:/Users/adili/projetos_offline/credit_scoring_prinad/api/api_monitoring.py) é inicializado automaticamente junto com a API e rastreia 6 dimensões vitais:
+
+1. **Telemetria de Sistema & Performance**:
+   - Volume total de requisições, Throughput em tempo real (RPS), Uptime e Taxa de Erro HTTP.
+   - Distribuição de latência em quantis: $p50$, $p95$ e $p99$ (em milissegundos).
+2. **Data Drift Contínuo em Tempo Real (Continuous PSI)**:
+   - Medição do *Population Stability Index* (PSI) em uma janela móvel de tomadores contra a distribuição esperada do treino.
+   - Semáforo automático: 🟢 Verde ($\text{PSI} < 0.10$), 🟡 Amarelo ($0.10 \le \text{PSI} \le 0.25$), 🔴 Vermelho ($\text{PSI} > 0.25$).
+3. **Rastreamento de Mix de Ratings & Estadiamento IFRS 9**:
+   - Proporção ao vivo de tomadores em cada rating (`A1` a `DEFAULT`) e em cada estágio (`Stage 1, 2 e 3`).
+4. **Divisão de Tráfego por Arquitetura de IA**:
+   - Contabilidade de inferências processadas pelo Champion (Scorecard) vs. Challengers (LightGBM, XGBoost, Ensemble).
+5. **Telemetria de Estresse Macroeconômico**:
+   - Rastreamento dos fatores de choque $Z$ simulados e do volume de cenários prospectivos solicitados.
+6. **Log de Auditoria e Alertas Regulatórios**:
+   - Notificações imediatas caso a taxa de inadimplência observada ou o volume de Stage 3 ultrapasse os limites de apetite a risco.
+
+---
+
+### 8. Requisitos de Dados Sintéticos e Reais
 
 - O diretório [`synth_data/`](file:///c:/Users/adili/projetos_offline/credit_scoring_prinad/synth_data) contém **100% de dados sintéticos** gerados pelo script [`models/synthetic_data_generator.py`](file:///c:/Users/adili/projetos_offline/credit_scoring_prinad/models/synthetic_data_generator.py).
 - Para instruções completas de implantação em produção com dados bancários reais (DOC 3040 SCR BACEN), consulte:
@@ -139,7 +163,7 @@ $$PD_{\text{Ponderada}} = 0.50 \cdot PD(Z_{\text{Base}}) + 0.25 \cdot PD(Z_{\tex
 
 ---
 
-### 8. Dashboard Executivo Streamlit
+### 9. Dashboard Executivo Streamlit (6 Abas)
 
 Execute a plataforma visual interativa com:
 ```bash
@@ -150,16 +174,22 @@ streamlit run dashboard/app.py
 - **Tab 3: Arena Champion vs. Challenger**: Comparativo de ROC, Gini, KS e Brier Score.
 - **Tab 4: Validação nos 4 Pilares**: Semáforo de Basileia e intervalos Clopper-Pearson por rating.
 - **Tab 5: Precificação por Risco & Cut-off**: Curva de maximização de lucro líquido da carteira.
+- **Tab 6: Observability and Evals**: Cards de telemetria em tempo real, monitor de drift (PSI), gráficos interativos de mix de ratings e log de auditoria regulatória.
 
 ---
 
-### 9. API REST FastAPI & Exemplos cURL
+### 10. API REST FastAPI v3.1 & Exemplos cURL
 
 Inicie o servidor de produção:
 ```bash
 cd api
 python api.py
 # Documentação Swagger interativa em http://localhost:8000/docs
+```
+
+#### Exemplo de Monitoramento & EVALS (`/observability/overview`):
+```bash
+curl -X GET "http://localhost:8000/observability/overview"
 ```
 
 #### Exemplo de Classificação Rápida (`/simple_classify`):
@@ -176,7 +206,7 @@ curl -X POST "http://localhost:8000/simple_classify" \
 
 ---
 
-### 10. Guia de Início Rápido & Testes Automatizados
+### 11. Guia de Início Rápido & Testes Automatizados
 
 ```bash
 # 1. Instalação de Dependências
@@ -186,13 +216,13 @@ pip install -r requirements.txt
 python models/synthetic_data_generator.py
 python models/train_model.py
 
-# 3. Execução da Suíte de Testes (100% Aprovada)
+# 3. Execução da Suíte de Testes (18 testes - 100% Aprovados)
 python -m pytest -v
 ```
 
 ---
 
-### 11. Perguntas & Respostas Técnicas (20 Questões)
+### 12. Perguntas & Respostas Técnicas (20 Questões)
 
 #### Q1: Por que manter um Scorecard WoE como modelo Champion em vez de usar exclusivamente Gradient Boosting?
 **Resposta**: Em crédito regulado (Basileia III/IV IRB, Resolução BACEN 4.966, Fed SR 11-7, ECB), os modelos devem atender a exigências estritas de **interpretabilidade, contestabilidade jurídica (notificações de recusa), auditabilidade e estabilidade monotônica**. Um Scorecard WoE garante monotonicidade econômica e permite decompor qualquer decisão em pontos aditivos. Modelos de Gradient Boosting (LightGBM, XGBoost) atuam como Challengers de benchmark e modelos sombra.
@@ -293,8 +323,8 @@ $$\text{PSI} = \sum_{k=1}^K (\text{Real}_k - \text{Esperado}_k) \times \ln\left(
 
 #### Q20: Como a arquitetura do PRINAD assegura escalabilidade e inferência em tempo real?
 **Resposta**:
-- **FastAPI v3.0**: Endpoints assíncronos para concessão unitária (`/simple_classify`), explicabilidade glass-box (`/explained_classify`), processamento em lote (`/multiple_classify`) e simulação macroeconômica.
-- **Streamlit Executive Platform**: Cockpit visual multi-abas com gráficos interativos Plotly para comitês de crédito e auditoria.
+- **FastAPI v3.1**: Endpoints assíncronos para concessão unitária (`/simple_classify`), explicabilidade glass-box (`/explained_classify`), processamento em lote (`/multiple_classify`) e telemetria contínua (`/observability/*`).
+- **Streamlit Executive Platform**: Cockpit visual com 6 abas dinâmicas e gráficos Plotly para comitês de crédito e auditoria.
 - **Governança MLOps**: Monitoramento contínuo de drift (PSI), validação automatizada nos 4 pilares e geração de relatórios regulatórios formais.
 
 </details>
@@ -304,7 +334,7 @@ $$\text{PSI} = \sum_{k=1}^K (\text{Real}_k - \text{Esperado}_k) \times \ln\left(
 <details>
 <summary><h2 style="display:inline-block;" id="-english-version">🇺🇸 English Version (Click to open / expand)</h2></summary>
 
-> **PRINAD** is an enterprise-grade quantitative credit risk engine built to international banking standards (**Basel III/IV Internal Ratings-Based - IRB**, **IFRS 9 / CECL**, and **BACEN Resolução 4.966**). It operationalizes a **Champion-vs-Challenger architecture**, combining the full transparency of a **Regulatory Scorecard (WoE & Logistic Regression)** with the predictive power of **Calibrated Gradient Boosters (LightGBM, XGBoost, Stacking Ensemble)**, integrated with **Vasicek Macroeconomic Stress Testing**, **Markov Lifetime PD Curves**, and **RAROC Risk-Based Pricing**.
+> **PRINAD** is an enterprise-grade quantitative credit risk engine built to international banking standards (**Basel III/IV Internal Ratings-Based - IRB**, **IFRS 9 / CECL**, and **BACEN Resolução 4.966**). It operationalizes a **Champion-vs-Challenger architecture**, combining the full transparency of a **Regulatory Scorecard (WoE & Logistic Regression)** with the predictive power of **Calibrated Gradient Boosters (LightGBM, XGBoost, Stacking Ensemble)**, integrated with **Vasicek Macroeconomic Stress Testing**, **Markov Lifetime PD Curves**, **RAROC Risk-Based Pricing**, and **Real-Time Observability & Continuous EVALS**.
 
 ---
 
@@ -315,11 +345,12 @@ $$\text{PSI} = \sum_{k=1}^K (\text{Real}_k - \text{Esperado}_k) \times \ln\left(
 4. [The 4 Pillars of Model Validation](#4-the-4-pillars-of-model-validation)
 5. [Macroeconomic Modeling (Vasicek ASRF) & IFRS 9](#5-macroeconomic-modeling-vasicek-asrf--ifrs-9)
 6. [Financial Applications (ECL Provisioning & RAROC Pricing)](#6-financial-applications-ecl-provisioning--raroc-pricing)
-7. [Synthetic & Real Data Requirements](#7-synthetic--real-data-requirements)
-8. [Interactive Streamlit Dashboard](#8-interactive-streamlit-dashboard)
-9. [REST API Documentation & cURL Examples](#9-rest-api-documentation--curl-examples)
-10. [Quick Start Guide & Automated Testing](#10-quick-start-guide--automated-testing)
-11. [Technical Q&A (20 Questions & Answers)](#11-technical-qa-20-questions--answers)
+7. [Observability & Continuous EVALS Module](#7-observability--continuous-evals-module)
+8. [Synthetic & Real Data Requirements](#8-synthetic--real-data-requirements)
+9. [Interactive Streamlit Dashboard (6 Tabs)](#9-interactive-streamlit-dashboard-6-tabs)
+10. [REST API Documentation & cURL Examples](#10-rest-api-documentation--curl-examples)
+11. [Quick Start Guide & Automated Testing](#11-quick-start-guide--automated-testing)
+12. [Technical Q&A (20 Questions & Answers)](#12-technical-qa-20-questions--answers)
 
 ---
 
@@ -329,6 +360,7 @@ PRINAD bridges the gap between **regulatory compliance** and **state-of-the-art 
 - **Challenger Models**: **LightGBM**, **XGBoost** with monotonic constraints, and a **Stacking Ensemble**, probability-calibrated via **Isotonic Regression**.
 - **Macroeconomic Engine**: An **Asymptotic Single Risk Factor (Vasicek ASRF)** module conditioning Point-in-Time (PIT) PDs on GDP, interest rates, and unemployment under 3 IFRS 9 probability-weighted scenarios.
 - **Financial Downstream**: Automated **Stage 1, 2, and 3 Expected Credit Loss (ECL)** provisioning and **RAROC Risk-Based Loan Pricing**.
+- **Observability & EVALS**: Continuous real-time telemetry ($p50, p95, p99$ latency), live Population Stability Index (PSI) drift monitoring, rating distribution tracking, and automated regulatory alerts.
 
 ---
 
@@ -354,6 +386,10 @@ graph TD
     F --> G1["IFRS 9 / BACEN 4.966 ECL Engine<br/>(Stage 1, 2, 3 Provisioning)"]
     F --> G2["Risk-Based Pricing & RAROC Engine<br/>(Fair Interest Rate & Capital Charge)"]
     F --> G3["Economic Cut-off Optimizer<br/>(Portfolio Net Profit Maximization)"]
+    
+    G1 --> H["📈 Observability & Continuous EVALS Engine<br/>(Telemetry, Live PSI Drift, Rating Mix, Alerts)"]
+    G2 --> H
+    G3 --> H
 ```
 
 ---
@@ -410,7 +446,28 @@ $$PD_{\text{Weighted}} = 0.50 \cdot PD(Z_{\text{Baseline}}) + 0.25 \cdot PD(Z_{\
 
 ---
 
-### 7. Synthetic & Real Data Requirements
+### 7. Observability & Continuous EVALS Module
+
+The observability engine [`api/api_monitoring.py`](file:///c:/Users/adili/projetos_offline/credit_scoring_prinad/api/api_monitoring.py) boots up automatically with FastAPI to provide full runtime surveillance:
+
+1. **Operational Telemetry**:
+   - Total scored volume, requests per second (RPS), uptime, and HTTP error tracking.
+   - Latency percentiles: $p50$, $p95$, and $p99$ in milliseconds.
+2. **Real-Time Data Drift (Continuous PSI)**:
+   - Evaluates incoming applicant credit scores against the baseline distribution over a sliding evaluation window.
+   - Action Thresholds: 🟢 Green ($\text{PSI} < 0.10$), 🟡 Yellow ($0.10 \le \text{PSI} \le 0.25$), 🔴 Red ($\text{PSI} > 0.25$).
+3. **Live Rating Mix & IFRS 9 Staging Breakdown**:
+   - Live distribution of approved grades (`A1` to `DEFAULT`) and provisioning stages (`Stage 1, 2, 3`).
+4. **AI Architecture Traffic Split**:
+   - Workload share processed by Champion (Scorecard) vs. Challengers (LightGBM, XGBoost, Stacking).
+5. **Macroeconomic Stress Telemetry**:
+   - Tracking systematic shock factor $Z$ and scenario queries in production.
+6. **Regulatory Audit & Alert Logs**:
+   - Immediate automated triggers when portfolio-level delinquency or Stage 3 concentrations exceed risk appetite thresholds.
+
+---
+
+### 8. Synthetic & Real Data Requirements
 
 - The directory [`synth_data/`](file:///c:/Users/adili/projetos_offline/credit_scoring_prinad/synth_data) contains **100% synthetic data** generated by [`models/synthetic_data_generator.py`](file:///c:/Users/adili/projetos_offline/credit_scoring_prinad/models/synthetic_data_generator.py).
 - For complete real-world banking integration guidelines and SQL scripts (DOC 3040 SCR BACEN), refer to:
@@ -418,7 +475,7 @@ $$PD_{\text{Weighted}} = 0.50 \cdot PD(Z_{\text{Baseline}}) + 0.25 \cdot PD(Z_{\
 
 ---
 
-### 8. Interactive Streamlit Dashboard
+### 9. Interactive Streamlit Dashboard (6 Tabs)
 
 ```bash
 streamlit run dashboard/app.py
@@ -428,10 +485,11 @@ streamlit run dashboard/app.py
 - **Tab 3: Champion vs. Challenger Arena**: Live comparative benchmarks and ROC curves.
 - **Tab 4: 4-Pillar Validation**: Exact Binomial test confidence intervals and Basel traffic lights.
 - **Tab 5: Risk-Based Pricing & Cut-off**: Net profit maximization curves.
+- **Tab 6: Observability and Evals**: Real-time telemetry cards, continuous PSI drift chart, live rating mix donut chart, and active audit alert logs.
 
 ---
 
-### 9. REST API Documentation & cURL Examples
+### 10. REST API Documentation & cURL Examples
 
 ```bash
 cd api
@@ -440,6 +498,12 @@ python api.py
 ```
 
 ```bash
+# Query Real-Time Observability & EVALS Report
+curl -X GET "http://localhost:8000/observability/overview"
+```
+
+```bash
+# Score a Borrower
 curl -X POST "http://localhost:8000/simple_classify" \
      -H "Content-Type: application/json" \
      -d '{
@@ -452,7 +516,7 @@ curl -X POST "http://localhost:8000/simple_classify" \
 
 ---
 
-### 10. Quick Start Guide & Automated Testing
+### 11. Quick Start Guide & Automated Testing
 
 ```bash
 # 1. Install Dependencies
@@ -462,13 +526,13 @@ pip install -r requirements.txt
 python models/synthetic_data_generator.py
 python models/train_model.py
 
-# 3. Run Automated Tests
+# 3. Run Automated Test Suite (18 tests - 100% Passed)
 python -m pytest -v
 ```
 
 ---
 
-### 11. Technical Q&A (20 Questions & Answers)
+### 12. Technical Q&A (20 Questions & Answers)
 
 *(Comprehensive review covering regulatory compliance, quantitative mathematics, econometrics, and production engineering)*
 
@@ -583,9 +647,9 @@ Under Basel Traffic Light rules, if the cumulative binomial probability $P(X \ge
 
 #### Q20: How does the PRINAD production architecture ensure enterprise scalability and real-time inference?
 **Answer**:
-- **FastAPI v3.0 REST Server**: Asynchronous endpoints for single underwriting (`/simple_classify`), glass-box points attribution (`/explained_classify`), high-throughput batch scoring (`/multiple_classify`), and real-time Vasicek macro simulations.
-- **Streamlit Dashboard**: Multi-tab visual intelligence cockpit for credit executives, risk committees, and credit underwriters.
-- **Continuous Monitoring**: Automatic logging of feature distributions, PSI tracking across cohorts, and model benchmark comparisons.
+- **FastAPI v3.1 REST Server**: Asynchronous endpoints for single underwriting (`/simple_classify`), glass-box points attribution (`/explained_classify`), high-throughput batch scoring (`/multiple_classify`), and real-time observability (`/observability/*`).
+- **Streamlit Dashboard**: Multi-tab visual intelligence cockpit (6 tabs) with Plotly interactive charts for credit executives, risk committees, and credit underwriters.
+- **Continuous Monitoring**: Automatic logging of feature distributions, continuous PSI tracking across live cohorts, and active regulatory audit alarms.
 
 </details>
 
