@@ -6,7 +6,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-v3.1.0-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-FF4B4B.svg?logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![Regulatory Standard](https://img.shields.io/badge/Regulatory-Basel%20III%2FIV%20IRB%20%7C%20IFRS%209%20%7C%20BACEN%204.966-gold.svg)](#-regulatory--methodological-framework)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: GNU AGPLv3](https://img.shields.io/badge/License-GNU%20AGPLv3-blue.svg)](LICENSE)
 
 <h3>
   🌐 Escolha o Idioma / Choose Language:
@@ -38,6 +38,7 @@
 10. [API REST FastAPI v3.1 & Exemplos cURL](#10-api-rest-fastapi-v31--exemplos-curl)
 11. [Guia de Início Rápido & Testes Automatizados](#11-guia-de-início-rápido--testes-automatizados)
 12. [Perguntas & Respostas Técnicas (20 Questões de Estudo & Entrevista)](#12-perguntas--respostas-técnicas-20-questões)
+13. [Licença & Termos de Uso (GNU AGPLv3)](#13-licença--termos-de-uso-gnu-agplv3)
 
 ---
 
@@ -327,6 +328,15 @@ $$\text{PSI} = \sum_{k=1}^K (\text{Real}_k - \text{Esperado}_k) \times \ln\left(
 - **Streamlit Executive Platform**: Cockpit visual com 6 abas dinâmicas e gráficos Plotly para comitês de crédito e auditoria.
 - **Governança MLOps**: Monitoramento contínuo de drift (PSI), validação automatizada nos 4 pilares e geração de relatórios regulatórios formais.
 
+---
+
+### 13. ⚖️ Licença & Termos de Uso (GNU AGPLv3)
+
+Este projeto está licenciado sob os termos da **GNU Affero General Public License v3.0 (GNU AGPLv3)**.
+- **Uso Livre & Aberto para Fins Educacionais e de Pesquisa**: Estudantes, acadêmicos e pesquisadores quantitativos podem clonar, estudar e utilizar o código para aprendizado.
+- **Proteção e Restrição Comercial Estrita**: Nenhuma empresa, instituição financeira, fintech ou entidade com fins lucrativos pode utilizar, integrar, incorporar, executar como serviço de rede (SaaS / API em nuvem) ou explorar comercialmente este repositório (no todo ou em parte) **sem a prévia, expressa e formal anuência e licenciamento do autor original**.
+- **Obrigatoriedade de Copyleft de Rede**: O uso ou modificação deste software em servidores de rede impõe a obrigação legal irrevogável de disponibilizar o código-fonte integral sob a mesma licença AGPLv3.
+
 </details>
 
 ---
@@ -351,6 +361,7 @@ $$\text{PSI} = \sum_{k=1}^K (\text{Real}_k - \text{Esperado}_k) \times \ln\left(
 10. [REST API Documentation & cURL Examples](#10-rest-api-documentation--curl-examples)
 11. [Quick Start Guide & Automated Testing](#11-quick-start-guide--automated-testing)
 12. [Technical Q&A (20 Questions & Answers)](#12-technical-qa-20-questions--answers)
+13. [License & Terms of Use (GNU AGPLv3)](#13-license--terms-of-use-gnu-agplv3)
 
 ---
 
@@ -651,6 +662,15 @@ Under Basel Traffic Light rules, if the cumulative binomial probability $P(X \ge
 - **Streamlit Dashboard**: Multi-tab visual intelligence cockpit (6 tabs) with Plotly interactive charts for credit executives, risk committees, and credit underwriters.
 - **Continuous Monitoring**: Automatic logging of feature distributions, continuous PSI tracking across live cohorts, and active regulatory audit alarms.
 
+---
+
+### 13. ⚖️ License & Terms of Use (GNU AGPLv3)
+
+This project is licensed under the **GNU Affero General Public License v3.0 (GNU AGPLv3)**.
+- **Free & Open for Educational and Quantitative Research Purposes**: Students, academics, and quantitative researchers are welcome to clone, inspect, and learn from this codebase.
+- **Strict Commercial & Network Copyleft Terms**: No corporation, commercial bank, fintech, or for-profit entity is permitted to use, integrate, host as a cloud network service (SaaS / API), or commercially exploit this software or derivative works **without express written consent and formal commercial licensing from the author**.
+- **Network Copyleft Enforcement**: Any server/cloud deployment of modified versions triggers the mandatory requirement to make the complete source code available under the GNU AGPLv3.
+
 </details>
 
 ---
@@ -661,5 +681,6 @@ Under Basel Traffic Light rules, if the cumulative binomial probability $P(X \ge
 
 ---
 
-## ⚖️ License & Attribution
-Developed for advanced credit risk modeling, educational excellence, and international quantitative portfolio presentation. Licensed under the [MIT License](LICENSE).
+## ⚖️ License & Legal Notice
+Developed for advanced quantitative credit risk modeling, research excellence, and international portfolio presentation. Protected under the [GNU Affero General Public License v3.0 (GNU AGPLv3)](LICENSE). Copyright (c) 2026. All commercial exploitation without author authorization is strictly prohibited.
+
